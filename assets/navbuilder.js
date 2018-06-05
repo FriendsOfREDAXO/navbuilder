@@ -7,7 +7,11 @@ jQuery(document).ready(function () {
     var editor = new MenuEditor('myEditor', {listOptions: sortableListOptions, labelEdit: 'Editieren'});
     editor.setForm($('#frmEdit'));
     editor.setUpdateButton($('#btnUpdate'));
-    editor.setData(navbuilderJson);
+	
+	if(typeof navbuilderJson !== 'undefined'){
+		editor.setData(navbuilderJson);
+	}
+    
 
     $('#btnOut').on('click', function () {
         var str = editor.getString();
