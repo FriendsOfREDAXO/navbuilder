@@ -1,0 +1,17 @@
+package: navbuilder
+version: '1.0.0'
+author: Friends Of REDAXO
+supportpage: https://github.com/FriendsOfREDAXO/navbuilder
+
+page:
+    title: NavBuilder
+    perm: navbuilder[]
+    pjax: false
+    icon: rex-icon fa-bars
+    subpages:
+            menus: { title: 'Navigationen'}
+
+requires:
+    packages:
+        structure: '^2.5.0'
+    redaxo: '^5.5.0'
