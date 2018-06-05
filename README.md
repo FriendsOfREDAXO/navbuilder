@@ -1,7 +1,7 @@
 REDAXO-AddOn: NavBuilder
 =======================
 
-Das AddOn ermöglicht es Navigation variabel zusammen zu stellen.
+Redaxo 5 Addon für frei zusammenstellbare Navigationen.
 
 Mindestvoraussetzungen
 ----------------------
