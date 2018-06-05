@@ -3,6 +3,8 @@ REDAXO-AddOn: NavBuilder
 
 Redaxo 5 Addon für frei zusammenstellbare Navigationen.
 
+![Screenshot](https://raw.githubusercontent.com/FriendsOfREDAXO/navbuilder/assets/navbuilder_01.png)
+
 Mindestvoraussetzungen
 ----------------------
 
