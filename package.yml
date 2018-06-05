@@ -9,7 +9,7 @@ page:
     pjax: false
     icon: rex-icon fa-bars
     subpages:
-            menus: { title: 'Navigationen'}
+            menus: {title: 'Navigationen'}
 
 requires:
     packages:
