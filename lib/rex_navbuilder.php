@@ -26,16 +26,21 @@ class rex_navbuilder
 			if($item["href"] == rex_article::getCurrentId()){
 				$active = " rex-active";
 			}
+			
+			$title = '';
+			if($item["href"] != ''){
+				$title = rex_article::get($item["href"])->getName();
+			}
 
             if (!empty($item['children'])) {
                 if ($item['text'] !== '') {
-                    $list .= '<li class="rex-article-' . $item["href"] . $active . '"><a href="' . rex_getUrl($item["href"]) . '" target="' . $item["target"] . '">' . $item['text'] . '</a>' . self::buildNavigation($item['children'], $depth + 1) . '</li>';
+                    $list .= '<li class="rex-article-' . $item["href"] . $active . '"><a href="' . rex_getUrl($item["href"]) . '">' . $title . '</a>' . self::buildNavigation($item['children'], $depth + 1) . '</li>';
                 } else if ($item['group'] !== '') {
                     $list .= '<li class="rex-article-' . $item["href"] . $active . '"><span class="group">' . $item['group'] . '</span>' . self::buildNavigation($item['children'], $depth + 1) . '</li>';
                 }
 
             } else {
-                $list .= '<li class="rex-article-' . $item["href"] . $active . '"><a href="' . rex_getUrl($item["href"]) . '" target="' . $item["target"] . '">' . $item['text'] . '</a></li>';
+                $list .= '<li class="rex-article-' . $item["href"] . $active . '"><a href="' . rex_getUrl($item["href"]) . '">' . $title . '</a></li>';
             }
 
         }
