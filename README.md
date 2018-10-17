@@ -8,6 +8,7 @@ Features:
 - Wählbare Elemente für die Navigation:
   - Gruppe
   - Interne Links
+  - Externe Links
 - Beliebige Verschachtelung von Elementen
 - Einbindung über Code-Snippet, zbsp. "REX_NAVBUILDER[name=Name]"
 

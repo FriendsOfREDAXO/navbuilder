@@ -888,17 +888,23 @@ function MenuEditor(idSelector, options) {
     function editItem($item) {
         var data = $item.data();
 
-        console.log(data);
-
-        $form.find('input#group').val(data.group);
-        $form.find('input#REX_LINK_href_NAME').val(data.text);
-        $form.find('input#REX_LINK_href').val(data.href);
-        $form.find('select#target').val(data.target);
+        if (data.type === 'intern') {
+            $form.find('input#REX_LINK_href_NAME').val(data.text);
+            $form.find('input#REX_LINK_href').val(data.href);
+        }
+        else if (data.type === 'extern') {
+            $form.find('input#externLabel').val(data.text);
+            $form.find('input#externHref').val(data.href);
+        }
+        else if (data.type === 'group') {
+            $form.find('input#groupLabel').val(data.text);
+        }
 
         // $.each(data, function (p, v) {
         //     $form.find("[name=" + p + "]").val(v);
         // });
         $form.find(".item-menu").first().focus();
+
         // $updateButton.removeAttr('disabled');
 
         function extractIcon(icon) {
@@ -976,11 +982,14 @@ function MenuEditor(idSelector, options) {
             var $div = $('<div>').css('margin-bottom', '5px');
 
             var $span = '';
-            if (typeof (v.text) !== 'undefined' && v.text !== '') {
+            if (typeof (v.type) !== 'undefined' && v.type === 'intern') {
                 $span = $('<span class="txt">' + v.text + '</span>');
             }
-            else if (typeof (v.group) !== 'undefined' && v.group !== '') {
-                $span = $('<strong>Gruppe:</strong> <span class="group">' + v.group + '</span>');
+            else if (typeof (v.type) !== 'undefined' && v.type === 'extern') {
+                $span = $(' <span class="txt">' + v.text + '</span>');
+            }
+            else if (typeof (v.type) !== 'undefined' && v.type === 'group') {
+                $span = $('<strong>Gruppe:</strong> <span class="txt">' + v.text + '</span>');
             }
 
             var $divbtn = TButtonGroup();
@@ -1045,26 +1054,44 @@ function MenuEditor(idSelector, options) {
         return itemEditing;
     };
 
-    this.update = function () {
+    this.updateIntern = function () {
         var $cEl = this.getCurrentItem();
         if ($cEl === null) {
             return;
         }
-        // $form.find('.item-menu').each(function(){
-        //     $cEl.data($(this).attr('name'), $(this).val());
-        // });
-
-        $cEl.data('group', $form.find('input#group').val());
         $cEl.data('text', $form.find('input#REX_LINK_href_NAME').val());
         $cEl.data('href', $form.find('input#REX_LINK_href').val());
-        $cEl.data('target', $form.find('select#target').val());
 
         $cEl.find('span.txt').first().text($cEl.data('text'));
-        $cEl.find('span.group').first().text($cEl.data('group'));
         resetForm();
     };
 
-    this.add = function () {
+    this.updateExtern = function () {
+        var $cEl = this.getCurrentItem();
+        if ($cEl === null) {
+            return;
+        }
+
+        $cEl.data('text', $form.find('input#externLabel').val());
+        $cEl.data('href', $form.find('input#externHref').val());
+
+        $cEl.find('span.txt').first().text($cEl.data('text'));
+        resetForm();
+    };
+
+    this.updateGroup = function () {
+        var $cEl = this.getCurrentItem();
+        if ($cEl === null) {
+            return;
+        }
+
+        $cEl.data('text', $form.find('input#groupLabel').val());
+
+        $cEl.find('span.txt').first().text($cEl.data('text'));
+        resetForm();
+    };
+
+    this.addIntern = function () {
         var data = {};
         // $form.find('.item-menu').each(function(){
         //     data[$(this).attr('name')] = $(this).val();
@@ -1072,7 +1099,27 @@ function MenuEditor(idSelector, options) {
 
         data['text'] = $form.find('input#REX_LINK_href_NAME').val();
         data['href'] = $form.find('input#REX_LINK_href').val();
-        data['target'] = $form.find('select#target').val();
+        data['type'] = 'intern';
+
+        var btnGroup = TButtonGroup();
+        var textItem = $('<span>').addClass('txt').text(data.text);
+        var div = $('<div>').append("&nbsp;").append(textItem).append(btnGroup);
+        var $li = $("<li>").data(data);
+        $li.addClass('list-group-item').append(div);
+        $main.append($li);
+        MenuEditor.updateButtons($main);
+        resetForm();
+    };
+
+    this.addExtern = function () {
+        var data = {};
+        // $form.find('.item-menu').each(function(){
+        //     data[$(this).attr('name')] = $(this).val();
+        // });
+
+        data['text'] = $form.find('input#externLabel').val();
+        data['href'] = $form.find('input#externHref').val();
+        data['type'] = 'extern';
 
         var btnGroup = TButtonGroup();
         var textItem = $('<span>').addClass('txt').text(data.text);
@@ -1087,10 +1134,11 @@ function MenuEditor(idSelector, options) {
     this.addGroup = function () {
         var data = {};
 
-        data['group'] = $form.find('input#group').val();
+        data['text'] = $form.find('input#groupLabel').val();
+        data['type'] = 'group';
 
         var btnGroup = TButtonGroup();
-        var textItem = $('<span>').addClass('group').text(data.group);
+        var textItem = $('<span>').addClass('txt').text(data.text);
         var div = $('<div>').append("&nbsp;").append('<strong>Gruppe:</strong> ').append(textItem).append(btnGroup);
         var $li = $("<li>").data(data);
         $li.addClass('list-group-item').append(div);

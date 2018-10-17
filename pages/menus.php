@@ -4,38 +4,38 @@ $id = rex_request('id', 'int');
 $func = rex_request('func', 'string');
 
 $nav = rex_post('config', [
-	['name', 'string'],
-	['structure', 'string'],
+    ['name', 'string'],
+    ['structure', 'string'],
 ]);
 
 if ($func === "save") {
-	
-	$sql = rex_sql::factory();
-	$sql->setTable(rex::getTable("navbuilder_navigation"));
-	
-	if($id > 0){
-		$sql->setWhere('id="'.$id.'"');
-		$sql->setValue('name',$nav['name']);
-		$sql->setValue('structure',$nav['structure']);
-		$sql->update();
-		echo rex_view::success('nav "' . $nav['name'] . '" wurde aktualisiert');
-	} else {
-		$sql->setValue('name',$nav['name']);
-		$sql->setValue('structure',$nav['structure']);
-		$sql->insert();
-		$id = (int) $sql->getLastId();
-		echo rex_view::success('nav "' . $nav['name'] . '" wurde angelegt');
-	}
+
+    $sql = rex_sql::factory();
+    $sql->setTable(rex::getTable("navbuilder_navigation"));
+
+    if ($id > 0) {
+        $sql->setWhere('id="' . $id . '"');
+        $sql->setValue('name', $nav['name']);
+        $sql->setValue('structure', $nav['structure']);
+        $sql->update();
+        echo rex_view::success('nav "' . $nav['name'] . '" wurde aktualisiert');
+    } else {
+        $sql->setValue('name', $nav['name']);
+        $sql->setValue('structure', $nav['structure']);
+        $sql->insert();
+        $id = (int)$sql->getLastId();
+        echo rex_view::success('nav "' . $nav['name'] . '" wurde angelegt');
+    }
 }
 
 if ($func === "delete") {
-	
-	$sql = rex_sql::factory();
-	$sql->setTable(rex::getTable("navbuilder_navigation"));
-	$sql->setWhere('id="'.$id.'"');
-	$sql->delete();
-	
-	echo rex_view::success('nav "' . $nav['name'] . '" wurde gelöscht');
+
+    $sql = rex_sql::factory();
+    $sql->setTable(rex::getTable("navbuilder_navigation"));
+    $sql->setWhere('id="' . $id . '"');
+    $sql->delete();
+
+    echo rex_view::success('nav "' . $nav['name'] . '" wurde gelöscht');
 }
 
 if ($func == '' || $func == 'delete') {
@@ -62,7 +62,7 @@ if ($func == '' || $func == 'delete') {
     $content = $fragment->parse('core/page/section.php');
 
     echo $content;
-} else if ($func == 'add' || $func == 'edit'  || $func == 'save') {
+} else if ($func == 'add' || $func == 'edit' || $func == 'save') {
 
     $widget = rex_var_link::getWidget('href', 'href', 1);
 
@@ -76,11 +76,11 @@ if ($func == '' || $func == 'delete') {
 
     $content .= '
         <script>
-			var navbuilderJson = ' . ( $nav->structure != '' ? $nav->structure : '{}' ) . ';
+			var navbuilderJson = ' . ($nav->structure != '' ? $nav->structure : '{}') . ';
         </script>
 		<div class="row">
 			<form id="frmOut" action="' . rex_url::currentBackendPage() . '" method="post">
-				<input type="hidden" name="id" value="'.$id.'"/>
+				<input type="hidden" name="id" value="' . $id . '"/>
 			
 				<div class="col-md-12">
 					<div class="panel panel-default">
@@ -119,14 +119,14 @@ if ($func == '' || $func == 'delete') {
 								<div class="panel-heading">Gruppe</div>
 								<div class="panel-body">
 									<div class="form-group">
-										<label for="groupname" class="col-sm-2 control-label">Name</label>
+										<label for="groupLabel" class="col-sm-2 control-label">Name</label>
 										<div class="col-sm-10">
-											<input id="group" type="text" name="group"/>
+											<input id="groupLabel" type="text" name="groupLabel"/>
 										</div>
 									</div>
 								</div>
 								<div class="panel-footer">
-									<button type="button" id="btnUpdate" class="btn btn-primary"><i class="fa fa-refresh"></i> Aktualisieren</button>
+									<button type="button" id="btnUpdateGroup" class="btn btn-primary"><i class="fa fa-refresh"></i> Aktualisieren</button>
 									<button type="button" id="btnAddGroup" class="btn btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
 								</div>
 							</div>
@@ -136,7 +136,7 @@ if ($func == '' || $func == 'delete') {
 								<div class="panel-heading">Interner Link</div>
 								<div class="panel-body">
 									<div class="form-group">
-										<label for="href" class="col-sm-2 control-label">URL</label>
+										<label for="internHref" class="col-sm-2 control-label">URL</label>
 										<div class="col-sm-10">
 											' . $widget . '
 										</div>
@@ -153,8 +153,31 @@ if ($func == '' || $func == 'delete') {
 									</div>-->
 								</div>
 								<div class="panel-footer">
-									<button type="button" id="btnUpdate" class="btn btn-primary"><i class="fa fa-refresh"></i> Aktualisieren</button>
-									<button type="button" id="btnAdd" class="btn btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
+									<button type="button" id="btnUpdateIntern" class="btn btn-primary"><i class="fa fa-refresh"></i> Aktualisieren</button>
+									<button type="button" id="btnAddIntern" class="btn btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-12">
+							<div class="panel panel-primary">
+								<div class="panel-heading">Externer Link</div>
+								<div class="panel-body">
+                                    <div class="form-group">
+                                        <label for="externLabel" class="col-sm-2 control-label">Label</label>
+                                        <div class="col-sm-10">
+                                            <input id="externLabel" type="text" name="externLabel"/>
+                                        </div>
+									</div>
+                                    <div class="form-group">
+                                        <label for="externHref" class="col-sm-2 control-label">URL</label>
+                                        <div class="col-sm-10">
+                                            <input id="externHref" type="text" name="externHref"/>
+                                        </div>
+									</div>
+								</div>
+								<div class="panel-footer">
+									<button type="button" id="btnUpdateExtern" class="btn btn-primary"><i class="fa fa-refresh"></i> Aktualisieren</button>
+									<button type="button" id="btnAddExtern" class="btn btn-success"><i class="fa fa-plus"></i> Hinzufügen</button>
 								</div>
 							</div>
 						</div>

@@ -20,16 +20,28 @@ jQuery(document).ready(function () {
         $('#frmOut').submit();
     });
 
-    $("#btnUpdate").click(function () {
-        editor.update();
+    $('#btnAddIntern').click(function () {
+        editor.addIntern();
     });
 
-    $('#btnAdd').click(function () {
-        editor.add();
+    $("#btnUpdateIntern").click(function () {
+        editor.updateIntern();
+    });
+
+    $('#btnAddExtern').click(function () {
+        editor.addExtern();
+    });
+
+    $("#btnUpdateExtern").click(function () {
+        editor.updateExtern();
     });
 
     $('#btnAddGroup').click(function () {
         editor.addGroup();
+    });
+
+    $("#btnUpdateGroup").click(function () {
+        editor.updateGroup();
     });
 
 });
