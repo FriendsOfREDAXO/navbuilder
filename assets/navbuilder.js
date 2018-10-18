@@ -11,13 +11,10 @@ jQuery(document).ready(function () {
 	if(typeof navbuilderJson !== 'undefined'){
 		editor.setData(navbuilderJson);
 	}
-    
 
-    $('#btnOut').on('click', function () {
+    $('#btnOut').on('click', function (e) {
         var str = editor.getString();
         $("#structure").text(str);
-
-        $('#frmOut').submit();
     });
 
     $('#btnAddIntern').click(function () {

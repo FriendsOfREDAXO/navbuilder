@@ -18,13 +18,13 @@ if ($func === "save") {
         $sql->setValue('name', $nav['name']);
         $sql->setValue('structure', $nav['structure']);
         $sql->update();
-        echo rex_view::success('nav "' . $nav['name'] . '" wurde aktualisiert');
+        echo rex_view::success('Navigation "' . $nav['name'] . '" wurde aktualisiert');
     } else {
         $sql->setValue('name', $nav['name']);
         $sql->setValue('structure', $nav['structure']);
         $sql->insert();
         $id = (int)$sql->getLastId();
-        echo rex_view::success('nav "' . $nav['name'] . '" wurde angelegt');
+        echo rex_view::success('Navigation "' . $nav['name'] . '" wurde angelegt');
     }
 }
 
@@ -35,7 +35,7 @@ if ($func === "delete") {
     $sql->setWhere('id="' . $id . '"');
     $sql->delete();
 
-    echo rex_view::success('nav "' . $nav['name'] . '" wurde gelöscht');
+    echo rex_view::success('Navigation "' . $nav['name'] . '" wurde gelöscht');
 }
 
 if ($func == '' || $func == 'delete') {
@@ -103,8 +103,8 @@ if ($func == '' || $func == 'delete') {
 							</div>
 						</div>
 						<div class="form-group">
-							<button type="submit" id="btnOut" name="func" value="save" type="button" class="btn btn-success"><i class="glyphicon glyphicon-ok"></i> Speichern</button>
-							<button type="submit" name="func" value="delete" type="button" class="btn btn-delete"><i class="glyphicon glyphicon-delete"></i> Löschen</button>
+							<button type="submit" name="func" value="save" class="btn btn-success" id="btnOut"><i class="glyphicon glyphicon-ok"></i> Speichern</button>
+							<button type="submit" name="func" value="delete" class="btn btn-delete"><i class="glyphicon glyphicon-delete"></i> Löschen</button>
 						</div>
 						<div class="form-group">
 							<textarea class="hidden" id="structure" name="config[structure]" class="form-control" cols="50" rows="10"></textarea>
