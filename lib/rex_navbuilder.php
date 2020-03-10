@@ -27,7 +27,7 @@ class rex_navbuilder
                 $children = self::buildNavigation($item['children'], $depth + 1);
             }
 
-            if ($item['type'] == 'intern') {
+            if ($item['type'] == 'intern' && rex_article::get($item["href"]) ){
                 $active = '';
                 if ($item["href"] == rex_article::getCurrentId()) {
                     $active = " rex-active";

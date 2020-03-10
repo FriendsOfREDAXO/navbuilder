@@ -14,7 +14,7 @@ if (!rex::isBackend()) {
 		$content = $ep->getSubject();
 		
 		if (!is_null(rex_article::getCurrent())) {
-			preg_match_all("/REX_NAVBUILDER\[name=(.*)]/", $content, $matches, PREG_SET_ORDER);
+			preg_match_all("/REX_NAVBUILDER\[name=(.*?)]/", $content, $matches, PREG_SET_ORDER);
 			
 			foreach($matches as $match){
 				$content = str_replace($match[0], rex_navbuilder::get($match[1]), $content);
