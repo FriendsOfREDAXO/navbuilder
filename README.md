@@ -17,5 +17,5 @@ Features:
 Mindestvoraussetzungen
 ----------------------
 
-* PHP 5.5
-* REDAXO 5.0
+* PHP 7.3
+* REDAXO 5.9
