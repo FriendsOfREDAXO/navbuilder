@@ -2,6 +2,14 @@
 
 class rex_navbuilder
 {
+    /**
+     * get the structure of nav $name
+     * 
+     * @param string $name
+     * 
+     * @return string
+     */
+     
     public static function get($name)
     {
         $depth = 1;
@@ -16,6 +24,15 @@ class rex_navbuilder
 
         return self::buildNavigation($items, $depth);
     }
+
+    /**
+     * builds a nav of $items for $depth
+     * 
+     * @param array $items
+     * @param int $depth
+     * 
+     * @return string
+     */
 
     private static function buildNavigation($items, $depth)
     {
@@ -43,7 +60,7 @@ class rex_navbuilder
         return '<ul class="rex-navi-depth-' . $depth . '">' . $list . '</ul>';
     }
 
-      /**
+    /**
      * get the raw structure of nav $name
      * 
      * @param string $name
@@ -76,31 +93,28 @@ class rex_navbuilder
         $list = [];
 
         foreach ($items as $item):
-
-
-            $children = [];
-
-            if (!empty($item['children'])) {
-                $children = self::buildStructure($item['children']);
-            }
-
+        
             $data = [
-                "type" => $item["type"],
-                "children" => $children
+                "type" => $item["type"]
             ];
 
-            if ($item['type'] == 'intern' && rex_article::get($item["href"]) ){
+            $children = [];
+            if (!empty($item['children'])) {
+                $data["children"] = self::buildStructure($item['children']);
+            }
+
+            if ($item['type'] === 'intern' && rex_article::get($item["href"]) ){
                 
                 $data["id"] = $item["href"];
                 $data["active"] = $item["href"] == rex_article::getCurrentId();
                 $data["name"] = rex_article::get($item["href"])->getName();
 
-            } else if ($item['type'] == 'extern') {
+            } else if ($item['type'] === 'extern') {
 
                 $data["name"] = $item["text"];
                 $data["href"] = $item["href"];
 
-            } else if ($item['type'] == 'group') {
+            } else if ($item['type'] === 'group') {
 
                 $data["name"] = $item["text"];
 
