@@ -20,4 +20,4 @@ Mindestvoraussetzungen
 * REDAXO 5.9.0
 * REDAXO::structure 2.9.0
 * REDAXO::phpmailer 2.7.0
-* REDAXO::yform 3.3.1
+* REDAXO::yform >3.3.1,<5
