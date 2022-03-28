@@ -15,5 +15,5 @@ requires:
     packages:
         structure: '^2.9.0'
         phpmailer: '^2.7.0'
-        yform: '^3.3.1'
+        yform: '^4.0'
     redaxo: '^5.9.0'
