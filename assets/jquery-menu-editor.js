@@ -1059,7 +1059,7 @@ function MenuEditor(idSelector, options) {
         if ($cEl === null) {
             return;
         }
-        $cEl.data('text', $form.find('input#REX_LINK_href_NAME').val());
+        $cEl.data('text', $form.find('input#internLabel').val() ? $form.find('input#internLabel').val() : $form.find('input#REX_LINK_href_NAME').val());
         $cEl.data('href', $form.find('input#REX_LINK_href').val());
 
         $cEl.find('span.txt').first().text($cEl.data('text'));
@@ -1097,7 +1097,7 @@ function MenuEditor(idSelector, options) {
         //     data[$(this).attr('name')] = $(this).val();
         // });
 
-        data['text'] = $form.find('input#REX_LINK_href_NAME').val();
+        data['text'] = $form.find('input#internLabel').val() ? $form.find('input#internLabel').val() : $form.find('input#REX_LINK_href_NAME').val();
         data['href'] = $form.find('input#REX_LINK_href').val();
         data['type'] = 'intern';
 
