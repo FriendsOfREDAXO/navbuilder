@@ -76,7 +76,7 @@ if ($func == '' || $func == 'delete') {
 
     $content .= '
         <script>
-			var navbuilderJson = ' . ($nav->structure != '' ? $nav->structure : '{}') . ';
+			var navbuilderJson = ' . ($nav->hasValue('structure') ? $nav->structure : '{}') . ';
         </script>
 		<div class="row">
 			<form id="frmOut" action="' . rex_url::currentBackendPage() . '" method="post">
@@ -89,7 +89,7 @@ if ($func == '' || $func == 'delete') {
 							<div class="form-group">
 								<label for="name" class="col-sm-2 control-label">Name</label>
 								<div class="col-sm-10">
-									<input id="name" type="text" name="config[name]" value="' . $nav->name . '"/>
+									<input id="name" type="text" name="config[name]" value="' . ($nav->hasValue('name') ? $nav->name : '') . '"/>
 								</div>
 							</div>
 						</div>
