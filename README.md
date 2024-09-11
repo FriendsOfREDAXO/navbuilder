@@ -26,6 +26,6 @@ Mindestvoraussetzungen
 
 [MIT Lizenz](LICENSE.md)
 
-## Autoren
+## Credits
 
 * Peter Thiel: @thielpeter 
