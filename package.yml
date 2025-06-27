@@ -1,5 +1,5 @@
 package: navbuilder
-version: '1.0.6'
+version: '1.1.0'
 author: Friends Of REDAXO
 supportpage: https://github.com/FriendsOfREDAXO/navbuilder
 
@@ -15,5 +15,5 @@ requires:
     packages:
         structure: '^2.9.0'
         phpmailer: '^2.7.0'
-        yform: '>3.3.1,<5'
+        yform: '>3.3.1,<6'
     redaxo: '^5.9.0'
