@@ -45,6 +45,11 @@ class rex_navbuilder
             }
 
             if ($item['type'] == 'intern' && rex_article::get($item["href"]) ){
+
+                if(!rex_article::get($item["href"]) || !rex_article::get($item["href"])->isOnline()){
+					continue;
+				}
+                
                 $active = '';
                 if ($item["href"] == rex_article::getCurrentId()) {
                     $active = " rex-active";
