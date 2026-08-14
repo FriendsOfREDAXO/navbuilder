@@ -354,59 +354,66 @@
 				.catch(() => []);
 		}
 
-		// The linkmap popup (structure/pages/linkmap.php) triggers `rex:selectLink` on the opener
-		// before it writes the widget inputs — that jQuery event is the documented hook, and the
-		// popup needs `opener.jQuery` anyway. No preventDefault: core's own write + self.close() is
-		// exactly what should happen, this only reads the args.
+		// The linkmap popup (structure/pages/linkmap.php) triggers `rex:selectLink` — but on the
+		// *popup's* window (`opener.jQuery(window)` inside the popup), never on the opener. So the
+		// handler must be bound, with our jQuery, to the window object `openLinkMap()` returns —
+		// binding to our own window looks plausible and silently never fires. Core's
+		// `rex_retain_popup_event_handlers()` re-binds these handlers across in-popup navigation
+		// (mform and tinymce use the same pattern). No preventDefault: core's own write into the
+		// hidden widget + self.close() is exactly what should happen, this only reads the args.
 		let pendingLinkmap = null;
 
-		if (window.jQuery) {
-			window.jQuery(window).on('rex:selectLink', (event, link, name) => {
-				const callback = pendingLinkmap;
-				const id = parseInt(String(link).replace('redaxo://', ''), 10);
+		const onSelectLink = (event, link, name) => {
+			const callback = pendingLinkmap;
+			const id = parseInt(String(link).replace('redaxo://', ''), 10);
 
-				pendingLinkmap = null;
+			pendingLinkmap = null;
 
-				if (callback && id > 0) {
-					callback(id, name);
-				}
-			});
-		}
+			if (callback && id > 0) {
+				callback(id, name);
+			}
+		};
 
 		function openLinkmap(callback) {
-			if ('function' !== typeof window.openLinkMap) {
+			if ('function' !== typeof window.openLinkMap || !window.jQuery) {
 				return;
 			}
 
 			pendingLinkmap = callback;
-			window.openLinkMap(linkmap.fieldId, linkmap.openParams || '');
+			const popup = window.openLinkMap(linkmap.fieldId, linkmap.openParams || '');
+
+			if (popup) {
+				// A same-named popup can be reused; off() keeps the handler from stacking.
+				window.jQuery(popup).off('rex:selectLink', onSelectLink).on('rex:selectLink', onSelectLink);
+			}
 		}
 
 		// Same shape for the mediapool: `selectMedia()` (mediapool/assets/mediapool.js) triggers
-		// `rex:selectMedia` on the opener with [filename, title] before it writes the widget input
-		// and closes itself. Reading the args is all this needs; core's own write still happens.
+		// `rex:selectMedia` with [filename, title] on the popup window returned by `openREXMedia()`.
 		let pendingMedia = null;
 
-		if (window.jQuery) {
-			window.jQuery(window).on('rex:selectMedia', (event, filename) => {
-				const callback = pendingMedia;
+		const onSelectMedia = (event, filename) => {
+			const callback = pendingMedia;
 
-				pendingMedia = null;
+			pendingMedia = null;
 
-				if (callback && filename) {
-					callback(String(filename));
-				}
-			});
-		}
+			if (callback && filename) {
+				callback(String(filename));
+			}
+		};
 
 		function openMediapool(callback) {
-			if ('function' !== typeof window.openREXMedia) {
+			if ('function' !== typeof window.openREXMedia || !window.jQuery) {
 				return;
 			}
 
 			pendingMedia = callback;
 			// `openREXMedia()` prefixes `REX_MEDIA_` itself, hence the bare opener id.
-			window.openREXMedia(mediapool.openerId, mediapool.openParams || '');
+			const popup = window.openREXMedia(mediapool.openerId, mediapool.openParams || '');
+
+			if (popup) {
+				window.jQuery(popup).off('rex:selectMedia', onSelectMedia).on('rex:selectMedia', onSelectMedia);
+			}
 		}
 
 		// ── Tree component ──────────────────────────────────────────────────────────────────
