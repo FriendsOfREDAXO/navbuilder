@@ -1,0 +1,613 @@
+<?php
+
+declare(strict_types=1);
+
+namespace FriendsOfRedaxo\NavBuilder;
+
+use rex;
+use rex_article;
+use rex_clang;
+use rex_functional_exception;
+use rex_i18n;
+use rex_logger;
+use rex_media;
+use rex_sql;
+use rex_url;
+
+/**
+ * Storage model for a single navigation (table `rex_navbuilder_navigation`).
+ *
+ * The `structure` column holds schema v2:
+ *
+ *     {"v":2,"maxDepth":3,"items":[
+ *       {"id":"a1b2c3d4","type":"article","articleId":12,"clang":null,"children":[],"label":"optional override"},
+ *       {"id":"e5f6a7b8","type":"link","url":"https://…","label":"Extern","target":"_blank","children":[]},
+ *       {"id":"b1c2d3e4","type":"media","file":"prospekt.pdf","label":"Prospekt","children":[]},
+ *       {"id":"c9d0e1f2","type":"text","label":"Service","text":"<p>…</p>","children":[]}
+ *     ]}
+ *
+ * `article` items carry the article id only — name and URL are resolved at render time, so
+ * renaming an article can never leave a stale label behind. A `label` key on an `article`
+ * item is a deliberate editorial override, never a cache. `media` items work the same way:
+ * only the mediapool filename is stored, the URL is resolved live.
+ *
+ * Every item may carry `hiddenIn: [clang_id, …]` — the languages it is *not* rendered in.
+ * Absent or empty means "visible everywhere"; the key is dropped on serialization when empty.
+ *
+ * `maxDepth` on the root caps nesting for this navigation (absent = unlimited up to
+ * {@see self::MAX_DEPTH}).
+ *
+ * Schema v1 (`{"type":"intern","text":"Startseite [1]","href":"1"}`) is understood by the same
+ * normalizer, which makes {@see self::migrateAll()} idempotent. The v1/2.0-dev `group` type is
+ * an alias of `text` and normalizes on decode, so stored `group` rows keep working untouched.
+ */
+final class Navigation
+{
+	public const SCHEMA_VERSION = 2;
+
+	/** Global hard cap for nesting — a per-navigation `maxDepth` can only go below it. */
+	public const MAX_DEPTH = 10;
+
+	/** Legacy type name => current type name. */
+	private const TYPE_ALIASES = ['intern' => 'article', 'extern' => 'link', 'group' => 'text'];
+
+	private const TARGETS = ['_self', '_blank', '_top'];
+
+	/** Everything a `link` item may point at. Anything else (javascript:, data:, …) is refused. */
+	private const SCHEMES = ['http', 'https', 'mailto', 'tel'];
+
+	private const MAX_ITEMS = 1000;
+
+	/**
+	 * @param list<array<string, mixed>> $items
+	 */
+	private function __construct(
+		public readonly int $id,
+		public readonly string $name,
+		public readonly array $items,
+		public readonly ?int $maxDepth = null,
+	) {
+	}
+
+	public static function table(): string
+	{
+		return rex::getTable('navbuilder_navigation');
+	}
+
+	public static function get(int $id): ?self
+	{
+		if ($id <= 0) {
+			return null;
+		}
+
+		return self::fromRows(rex_sql::factory()->getArray(
+			'SELECT `id`, `name`, `structure` FROM ' . self::table() . ' WHERE `id` = :id',
+			['id' => $id],
+		));
+	}
+
+	public static function load(string $name): ?self
+	{
+		if ('' === trim($name)) {
+			return null;
+		}
+
+		return self::fromRows(rex_sql::factory()->getArray(
+			'SELECT `id`, `name`, `structure` FROM ' . self::table() . ' WHERE `name` = :name ORDER BY `id` ASC LIMIT 1',
+			['name' => $name],
+		));
+	}
+
+	/** @return list<self> */
+	public static function all(): array
+	{
+		$navigations = [];
+
+		foreach (rex_sql::factory()->getArray('SELECT `id`, `name`, `structure` FROM ' . self::table() . ' ORDER BY `name` ASC') as $row) {
+			$raw = (string) ($row['structure'] ?? '');
+			$navigations[] = new self((int) $row['id'], (string) $row['name'], self::decode($raw), self::decodeMaxDepth($raw));
+		}
+
+		return $navigations;
+	}
+
+	/**
+	 * Validates and stores a navigation.
+	 *
+	 * @param string $structure raw JSON as posted by the backend app — either the v2 envelope
+	 *                          `{"v":2,"maxDepth":…,"items":[…]}` or a bare item list
+	 *
+	 * @throws rex_functional_exception on an empty/used name, a refused `link` url or a tree
+	 *                                  nested deeper than the navigation's own `maxDepth`
+	 *
+	 * @return int the id of the saved navigation
+	 */
+	public static function save(?int $id, string $name, string $structure): int
+	{
+		$name = trim($name);
+
+		if ('' === $name) {
+			throw new rex_functional_exception(rex_i18n::msg('navbuilder_error_name_required'));
+		}
+
+		// The OUTPUT_FILTER's `REX_NAVBUILDER[name=…]` regex only matches this pattern — any other
+		// name would save fine but produce a dead snippet no template could ever address.
+		if (1 !== preg_match('/^[a-z0-9_-]+$/', $name)) {
+			throw new rex_functional_exception(rex_i18n::rawMsg('navbuilder_error_name_invalid', $name));
+		}
+
+		$clash = rex_sql::factory()->getArray(
+			'SELECT `id` FROM ' . self::table() . ' WHERE `name` = :name AND `id` <> :id',
+			['name' => $name, 'id' => (int) $id],
+		);
+
+		if ([] !== $clash) {
+			throw new rex_functional_exception(rex_i18n::rawMsg('navbuilder_error_name_exists', $name));
+		}
+
+		$items = self::decode($structure, true);
+		$maxDepth = self::effectiveMaxDepth($id, $structure);
+		$depth = self::depthOf($items);
+		$limit = $maxDepth ?? self::MAX_DEPTH;
+
+		// Never silently flatten: an editor who nested too deep gets told which limit was hit —
+		// the navigation's own cap, or the global one when it has none.
+		if ($depth > $limit) {
+			throw new rex_functional_exception(rex_i18n::rawMsg('navbuilder_error_max_depth', (string) $limit, (string) $depth));
+		}
+
+		$sql = rex_sql::factory();
+		$sql->setTable(self::table());
+		$sql->setValue('name', $name);
+		$sql->setValue('structure', self::encode($items, $maxDepth));
+		$sql->setDateTimeValue('updated_at', time());
+
+		if (null !== $id && $id > 0) {
+			$sql->setWhere(['id' => $id]);
+			$sql->update();
+
+			return $id;
+		}
+
+		$sql->insert();
+
+		return (int) $sql->getLastId();
+	}
+
+	public static function delete(int $id): bool
+	{
+		if ($id <= 0) {
+			return false;
+		}
+
+		$sql = rex_sql::factory();
+		$sql->setTable(self::table());
+		$sql->setWhere(['id' => $id]);
+		$sql->delete();
+
+		return $sql->getRows() > 0;
+	}
+
+	/** @return int|null the id of the copy, or null when the source does not exist */
+	public static function duplicate(int $id): ?int
+	{
+		$source = self::get($id);
+
+		if (null === $source) {
+			return null;
+		}
+
+		$name = $source->name . '_copy';
+
+		for ($i = 2; null !== self::load($name); ++$i) {
+			$name = $source->name . '_copy' . $i;
+		}
+
+		return self::save(null, $name, self::encode($source->items, $source->maxDepth));
+	}
+
+	public function structureJson(): string
+	{
+		return self::encode($this->items, $this->maxDepth);
+	}
+
+	/**
+	 * Migrates every stored navigation to schema v2.
+	 *
+	 * Idempotent: rows already carrying `"v":2` *and* no renamed type are skipped, and
+	 * `structure_legacy` is only written for a real v1 row that has no backup yet, so a repeated
+	 * run cannot overwrite the original.
+	 *
+	 * @return array{migrated: int, skipped: int}
+	 */
+	public static function migrateAll(): array
+	{
+		$migrated = 0;
+		$skipped = 0;
+
+		foreach (rex_sql::factory()->getArray('SELECT `id`, `name`, `structure`, `structure_legacy` FROM ' . self::table()) as $row) {
+			$raw = (string) ($row['structure'] ?? '');
+			$decoded = json_decode($raw, true);
+			$isV2 = is_array($decoded) && self::SCHEMA_VERSION === (int) ($decoded['v'] ?? 0);
+
+			// The needle matches what self::encode() writes; `group` items are re-encoded as `text`
+			// by the same decode() path. Reading `type` lazily out of the raw JSON keeps the
+			// skip-fast branch cheap for the common "nothing to do" case.
+			if ($isV2 && !str_contains($raw, '"type":"group"')) {
+				++$skipped;
+				continue;
+			}
+
+			$sql = rex_sql::factory();
+			$sql->setTable(self::table());
+			$sql->setWhere(['id' => (int) $row['id']]);
+			$sql->setValue('structure', self::encode(self::decode($raw), self::decodeMaxDepth($raw)));
+
+			// The backup is the pre-v2 original — a v2→v2 type normalization must not claim that slot.
+			if (!$isV2 && '' === (string) ($row['structure_legacy'] ?? '')) {
+				$sql->setValue('structure_legacy', $raw);
+			}
+
+			$sql->update();
+			++$migrated;
+		}
+
+		return ['migrated' => $migrated, 'skipped' => $skipped];
+	}
+
+	/**
+	 * Decodes a stored/posted JSON string into a normalized v2 item list.
+	 *
+	 * Accepts the v2 envelope, a bare v2 item list and the v1 format alike; anything
+	 * unparseable degrades to an empty list instead of throwing.
+	 *
+	 * @param bool $strict see {@see self::normalizeItems()}
+	 *
+	 * @throws rex_functional_exception in strict mode
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	public static function decode(string $json, bool $strict = false): array
+	{
+		$data = json_decode(trim($json), true);
+
+		if (!is_array($data)) {
+			return [];
+		}
+
+		return self::normalizeItems($data['items'] ?? $data, $strict);
+	}
+
+	/**
+	 * The cap that actually gets stored — editorial policy, so only an admin may change it.
+	 *
+	 * A non-admin save carries the stored row's value over and ignores whatever the payload
+	 * claimed (new navigations: none). The console has no user and counts as an admin.
+	 */
+	private static function effectiveMaxDepth(?int $id, string $structure): ?int
+	{
+		$user = rex::getUser();
+
+		if (null === $user || $user->isAdmin()) {
+			return self::decodeMaxDepth($structure);
+		}
+
+		return null !== $id && $id > 0 ? self::get($id)?->maxDepth : null;
+	}
+
+	/**
+	 * Reads the root-level `maxDepth`, clamped into `1 … self::MAX_DEPTH`; null = unlimited.
+	 */
+	public static function decodeMaxDepth(string $json): ?int
+	{
+		$data = json_decode(trim($json), true);
+		$maxDepth = is_array($data) ? ($data['maxDepth'] ?? null) : null;
+
+		if (!is_numeric($maxDepth) || (int) $maxDepth < 1) {
+			return null;
+		}
+
+		return min((int) $maxDepth, self::MAX_DEPTH);
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $items
+	 */
+	public static function encode(array $items, ?int $maxDepth = null): string
+	{
+		$envelope = ['v' => self::SCHEMA_VERSION];
+
+		if (null !== $maxDepth) {
+			$envelope['maxDepth'] = $maxDepth;
+		}
+
+		$envelope['items'] = $items;
+
+		return (string) json_encode($envelope, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+	}
+
+	/**
+	 * Deepest nesting level in a normalized item list (0 for an empty list).
+	 *
+	 * @param list<array<string, mixed>> $items
+	 */
+	public static function depthOf(array $items): int
+	{
+		$depth = 0;
+
+		foreach ($items as $item) {
+			$depth = max($depth, 1 + self::depthOf($item['children'] ?? []));
+		}
+
+		return $depth;
+	}
+
+	/**
+	 * Whitelisting normalizer — the single mapper for v1 and v2 input.
+	 *
+	 * Only known keys survive, which is what strips the transient `_label`/`_online`/`_url`
+	 * fields the backend app works with, and what drops the dead v1 `title`/`group` keys.
+	 *
+	 * @param bool $strict raise on a refused `link` url instead of dropping the item — used on
+	 *                     save, where an editor must be told; migrations drop and log instead
+	 *
+	 * @throws rex_functional_exception in strict mode
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	public static function normalizeItems(mixed $raw, bool $strict = false): array
+	{
+		$state = ['count' => 0, 'ids' => [], 'strict' => $strict];
+
+		return self::mapItems($raw, 0, $state);
+	}
+
+	/**
+	 * Adds transient, underscore-prefixed display data for the backend app.
+	 *
+	 * These fields never round-trip into the database — {@see self::normalizeItems()} drops them.
+	 *
+	 * @param list<array<string, mixed>> $items
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	public static function enrich(array $items, ?int $clang = null): array
+	{
+		$clang ??= rex_clang::getCurrentId();
+
+		foreach ($items as &$item) {
+			if ('article' === ($item['type'] ?? '')) {
+				$articleClang = $item['clang'] ?? $clang;
+				$article = rex_article::get((int) $item['articleId'], $articleClang);
+
+				$item['_exists'] = null !== $article;
+				$item['_label'] = null !== $article ? $article->getName() : '';
+				$item['_online'] = null !== $article && $article->isOnline();
+				$item['_url'] = null !== $article ? rex_getUrl((int) $item['articleId'], $articleClang) : '';
+			} elseif ('media' === ($item['type'] ?? '')) {
+				// Same deal as a deleted article: flagged in the backend, skipped in the frontend.
+				$media = rex_media::get((string) ($item['file'] ?? ''));
+
+				$item['_exists'] = null !== $media;
+				$item['_url'] = null !== $media ? rex_url::media($media->getFileName()) : '';
+			}
+
+			$item['children'] = self::enrich($item['children'] ?? [], $clang);
+		}
+
+		unset($item);
+
+		return $items;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $rows
+	 */
+	private static function fromRows(array $rows): ?self
+	{
+		if ([] === $rows) {
+			return null;
+		}
+
+		$row = $rows[0];
+		$raw = (string) ($row['structure'] ?? '');
+
+		return new self((int) $row['id'], (string) $row['name'], self::decode($raw), self::decodeMaxDepth($raw));
+	}
+
+	/**
+	 * @param array{count: int, ids: array<string, true>, strict: bool} $state
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private static function mapItems(mixed $raw, int $depth, array &$state): array
+	{
+		if (!is_array($raw)) {
+			return [];
+		}
+
+		// A migration drops what is past the global cap (and says so). A save must not: silently
+		// truncating the editor's tree would also under-report the depth save() then validates,
+		// so strict mode keeps mapping and lets save() reject the real number.
+		if ($depth >= self::MAX_DEPTH && !$state['strict']) {
+			rex_logger::factory()->warning('navbuilder: dropped navigation items nested deeper than ' . self::MAX_DEPTH . ' levels');
+
+			return [];
+		}
+
+		$items = [];
+
+		foreach ($raw as $item) {
+			if (!is_array($item) || $state['count'] >= self::MAX_ITEMS) {
+				continue;
+			}
+
+			++$state['count'];
+
+			$rawType = (string) ($item['type'] ?? '');
+			$type = self::TYPE_ALIASES[$rawType] ?? $rawType;
+			$children = self::mapItems($item['children'] ?? [], $depth + 1, $state);
+			$id = self::itemId($item['id'] ?? null, $state);
+
+			// v1 stored the article name (incl. " [id]" suffix) in `text` — a cache that goes stale
+			// on every rename. Only the v2 `label` key counts as a deliberate override. On a v2
+			// `text` item that key is the HTML body, so it must never fall through into the label.
+			$override = trim((string) ($item['label'] ?? ''));
+			$label = '' !== $override ? $override : ('text' === $rawType ? '' : trim((string) ($item['text'] ?? '')));
+			$mapped = null;
+
+			if ('article' === $type) {
+				$articleId = $item['articleId'] ?? $item['href'] ?? null;
+
+				if (!is_numeric($articleId) || (int) $articleId <= 0) {
+					rex_logger::factory()->warning(sprintf(
+						'navbuilder: dropped navigation item of type "%s" with non-numeric article reference "%s"',
+						$rawType,
+						is_scalar($articleId) ? (string) $articleId : gettype($articleId),
+					));
+					continue;
+				}
+
+				$mapped = [
+					'id' => $id,
+					'type' => 'article',
+					'articleId' => (int) $articleId,
+					'clang' => is_numeric($item['clang'] ?? null) ? (int) $item['clang'] : null,
+					'children' => $children,
+				];
+
+				if ('' !== $override) {
+					$mapped['label'] = $override;
+				}
+			} elseif ('link' === $type) {
+				// Browsers ignore control characters inside a URL, so `java\nscript:…` would run as
+				// `javascript:…`. Strip them before validating *and* before storing.
+				$url = trim(preg_replace('/[\x00-\x1f\x7f]/', '', (string) ($item['url'] ?? $item['href'] ?? '')));
+
+				if ('' === $url) {
+					continue;
+				}
+
+				if (!self::isSafeUrl($url)) {
+					if ($state['strict']) {
+						throw new rex_functional_exception(rex_i18n::rawMsg('navbuilder_error_url_scheme', $url));
+					}
+
+					rex_logger::factory()->warning('navbuilder: dropped navigation item with unsupported url scheme "' . $url . '"');
+					continue;
+				}
+
+				$target = (string) ($item['target'] ?? '_self');
+
+				$mapped = [
+					'id' => $id,
+					'type' => 'link',
+					'url' => $url,
+					'label' => '' !== $label ? $label : $url,
+					'target' => in_array($target, self::TARGETS, true) ? $target : '_self',
+					'children' => $children,
+				];
+			} elseif ('media' === $type) {
+				// A mediapool file name is a bare basename; anything with a separator or a control
+				// character is not one and never goes near the filesystem or a URL.
+				$file = trim((string) ($item['file'] ?? ''));
+
+				if (1 !== preg_match('~^[^\x00-\x1f\x7f/\\\\]+$~', $file)) {
+					if ('' !== $file) {
+						rex_logger::factory()->warning('navbuilder: dropped media item with invalid file name "' . $file . '"');
+					}
+
+					continue;
+				}
+
+				$mapped = ['id' => $id, 'type' => 'media', 'file' => $file, 'children' => $children];
+
+				if ('' !== $override) {
+					$mapped['label'] = $override;
+				}
+			} elseif ('text' === $type) {
+				$mapped = ['id' => $id, 'type' => 'text', 'label' => $label, 'children' => $children];
+
+				// Only a real v2 `text` item carries HTML in `text` — on a legacy `group` that key is
+				// the label cache read above, and copying it here would print the label twice.
+				$html = 'text' === $rawType ? trim((string) ($item['text'] ?? '')) : '';
+
+				if ('' !== $html) {
+					$mapped['text'] = $html;
+				}
+			}
+
+			if (null === $mapped) {
+				rex_logger::factory()->warning('navbuilder: dropped navigation item with unknown type "' . $rawType . '"');
+				continue;
+			}
+
+			$hiddenIn = self::clangIds($item['hiddenIn'] ?? null);
+
+			if ([] !== $hiddenIn) {
+				$mapped['hiddenIn'] = $hiddenIn;
+			}
+
+			$items[] = $mapped;
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Whitelists a `hiddenIn` list: existing clang ids only, deduplicated, ints.
+	 *
+	 * @return list<int>
+	 */
+	private static function clangIds(mixed $raw): array
+	{
+		$ids = [];
+
+		foreach (is_array($raw) ? $raw : [] as $value) {
+			if (is_numeric($value) && rex_clang::exists((int) $value) && !in_array((int) $value, $ids, true)) {
+				$ids[] = (int) $value;
+			}
+		}
+
+		return $ids;
+	}
+
+	/**
+	 * Refuses `javascript:`, `data:` and any other scheme that can execute in an href.
+	 *
+	 * Everything without a scheme is fine — absolute paths, fragments, queries, bare relative
+	 * paths and protocol-relative `//host/…` URLs can never be a script URL.
+	 */
+	private static function isSafeUrl(string $url): bool
+	{
+		if (1 === preg_match('~^[/#?]~', $url)) {
+			return true;
+		}
+
+		$scheme = parse_url($url, PHP_URL_SCHEME);
+
+		if (null === $scheme || false === $scheme) {
+			return true;
+		}
+
+		return in_array(strtolower($scheme), self::SCHEMES, true);
+	}
+
+	/**
+	 * @param array{count: int, ids: array<string, true>, strict: bool} $state
+	 */
+	private static function itemId(mixed $id, array &$state): string
+	{
+		$id = is_scalar($id) ? (string) $id : '';
+
+		if (1 !== preg_match('/^[A-Za-z0-9_-]{1,32}$/', $id) || isset($state['ids'][$id])) {
+			do {
+				$id = bin2hex(random_bytes(4));
+			} while (isset($state['ids'][$id]));
+		}
+
+		$state['ids'][$id] = true;
+
+		return $id;
+	}
+}

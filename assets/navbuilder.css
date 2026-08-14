@@ -1,0 +1,431 @@
+/**
+ * NavBuilder 2.0 — backend editor styling.
+ *
+ * Loaded only on the addon's own page (boot.php). Buttons, inputs and form groups reuse the
+ * be_style/Bootstrap classes, so only the tree chrome (rows, nesting, connectors, drop
+ * indicators, badges) is styled here. Colours follow REDAXO's backend palette; the light/dark
+ * switch of be_style/customizer inverts `body` colours, so everything below is derived from
+ * `currentColor` and translucent overlays instead of hard greys wherever it can be.
+ *
+ * One exception worth knowing: be_style's dark theme sets a background on every `code` element
+ * (`body.rex-theme-dark code`, specificity 0-1-2). The url hint is a `code`, so its reset needs
+ * at least two classes to win — see `.nb-row code.nb-hint`.
+ */
+
+.navbuilder-app {
+	min-width: 0;
+}
+
+.nb-toolbar {
+	margin-bottom: 18px;
+}
+
+.nb-note {
+	color: #888;
+	font-style: italic;
+	margin: 0;
+	padding: 14px 4px;
+}
+
+/* ── Tree ───────────────────────────────────────────────────────────────────────────────── */
+
+.nb-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+/* No outer frame — the rows carry the structure, the page section is the frame. */
+.nb-list-root {
+	padding: 0;
+}
+
+/* Nesting depth — one indent per level, with a guide line back to the parent row … */
+.nb-item .nb-list {
+	border-left: 1px solid rgba(128, 128, 128, .35);
+	margin-left: 19px;
+	padding-left: 18px;
+}
+
+.nb-item {
+	margin: 5px 0;
+	position: relative;
+}
+
+/* … plus a connector stub from that line into each child row. */
+.nb-item .nb-list > .nb-item::before {
+	border-top: 1px solid rgba(128, 128, 128, .35);
+	content: "";
+	left: -18px;
+	position: absolute;
+	top: 21px;
+	width: 13px;
+}
+
+.nb-item-dragging > .nb-row {
+	opacity: .4;
+}
+
+.nb-row {
+	align-items: center;
+	background: rgba(128, 128, 128, .07);
+	border: 1px solid rgba(128, 128, 128, .28);
+	border-radius: 4px;
+	cursor: grab;
+	display: flex;
+	gap: 10px;
+	min-height: 42px;
+	padding: 7px 12px;
+	transition: background .12s ease, border-color .12s ease;
+}
+
+.nb-row:hover {
+	background: rgba(128, 128, 128, .14);
+	border-color: rgba(128, 128, 128, .45);
+}
+
+.nb-grip {
+	color: #999;
+	cursor: grab;
+	flex: none;
+}
+
+.nb-kind {
+	background: rgba(128, 128, 128, .22);
+	border-radius: 10px;
+	flex: none;
+	font-size: 10px;
+	letter-spacing: .04em;
+	opacity: .8;
+	padding: 2px 8px;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.nb-type-text > .nb-row {
+	background: rgba(91, 192, 222, .12);
+}
+
+.nb-type-media > .nb-row {
+	background: rgba(92, 184, 92, .1);
+}
+
+/* Row hint for per-language visibility: which languages this entry is hidden in. */
+.nb-hidden {
+	color: #888;
+	flex: none;
+	font-size: 11px;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.nb-title {
+	flex: none;
+	font-weight: 600;
+	max-width: 45%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.nb-title-broken {
+	text-decoration: line-through;
+}
+
+/* Two classes on purpose: beats be_style's `body.rex-theme-dark code` background. */
+.nb-row code.nb-hint {
+	background: none;
+	border-radius: 0;
+	color: #888;
+	flex: 0 1 auto;
+	font-size: 11px;
+	min-width: 0;
+	overflow: hidden;
+	padding: 0;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.nb-actions {
+	display: inline-flex;
+	flex: none;
+	gap: 3px;
+	margin-left: auto;
+	white-space: nowrap;
+}
+
+.nb-actions .nb-sep {
+	border-left: 1px solid rgba(128, 128, 128, .35);
+	margin: 0 3px;
+}
+
+.nb-remove:hover,
+.nb-remove:focus {
+	background: #d9534f;
+	border-color: #d43f3a;
+	color: #fff;
+}
+
+/* ── Badges ─────────────────────────────────────────────────────────────────────────────── */
+
+.nb-badge {
+	border-radius: 10px;
+	color: #fff;
+	flex: none;
+	font-size: 10px;
+	line-height: 1.5;
+	padding: 1px 8px;
+	white-space: nowrap;
+}
+
+.nb-badge-warning {
+	background: #f0ad4e;
+}
+
+.nb-badge-danger {
+	background: #d9534f;
+}
+
+/* ── Drag & drop indicators ─────────────────────────────────────────────────────────────── */
+
+/* before/after = new sibling at that edge, inside = nest into the hovered item. */
+.nb-drop-before {
+	box-shadow: inset 0 3px 0 0 #337ab7;
+}
+
+.nb-drop-after {
+	box-shadow: inset 0 -3px 0 0 #337ab7;
+}
+
+.nb-drop-inside {
+	border-color: #337ab7;
+	box-shadow: inset 0 0 0 1px #337ab7;
+}
+
+.nb-dropzone {
+	border: 1px dashed rgba(128, 128, 128, .5);
+	border-radius: 4px;
+	height: 32px;
+	margin-top: 8px;
+}
+
+.nb-dropzone-active {
+	background: rgba(51, 122, 183, .12);
+	border-color: #337ab7;
+}
+
+/* ── Insert-below bar ───────────────────────────────────────────────────────────────────── */
+
+/* Ghost row below the item (and its children) it inserts after — same level, index + 1. */
+.nb-addbar {
+	align-items: center;
+	border: 1px dashed rgba(128, 128, 128, .45);
+	border-radius: 4px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 5px 0;
+	padding: 8px 12px;
+}
+
+.nb-addbar-label {
+	color: #888;
+	font-size: 12px;
+}
+
+/* ── Edit form ──────────────────────────────────────────────────────────────────────────── */
+
+.nb-form {
+	background: rgba(128, 128, 128, .07);
+	border: 1px solid rgba(128, 128, 128, .28);
+	border-radius: 4px;
+	/* The two-column grid below sizes off the form, not the viewport — a nested item's form is
+	   much narrower than the page. */
+	container-type: inline-size;
+	margin: 5px 0 5px 19px;
+	padding: 16px;
+}
+
+.nb-grid {
+	display: grid;
+	gap: 0 18px;
+	grid-template-columns: 1fr;
+}
+
+@container (min-width: 700px) {
+	.nb-grid {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.nb-form .form-group:last-of-type {
+	margin-bottom: 0;
+}
+
+.nb-form-actions {
+	align-items: center;
+	display: flex;
+	gap: 6px;
+	margin-top: 16px;
+}
+
+/* Internal item id — the handle a fragment override branches on (see README).
+   Two classes again, for the same dark-theme `code` background reason as `.nb-hint`. */
+.nb-form code.nb-id {
+	background: none;
+	color: #999;
+	cursor: help;
+	font-size: 11px;
+	margin-left: auto;
+	padding: 0;
+}
+
+/* Segmented type switch. `.btn-sm` inherits Bootstrap's tight 10px sides, which reads as flush
+   against the label once an icon eats the left half — give it balanced breathing room instead.
+   `flex` (rather than the inherited inline-block) also drops the group onto its own line, away
+   from the inline `.control-label` it was crowding. */
+.nb-switch {
+	display: flex;
+	/* four buttons must reflow in narrow nested forms instead of overflowing */
+	flex-wrap: wrap;
+}
+
+.nb-switch .btn {
+	padding-left: 14px;
+	padding-right: 14px;
+}
+
+/* "Applying will drop the text body" — a standing note, not an error, so it stays amber. */
+.nb-warn {
+	color: #b06d0f;
+	margin-bottom: 0;
+}
+
+body.rex-theme-dark .nb-warn,
+body:not(.rex-theme-light) .nb-warn {
+	color: #f0ad4e;
+}
+
+/* ── Per-language visibility ────────────────────────────────────────────────────────────── */
+
+.nb-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.nb-chip {
+	border-radius: 10px;
+	padding-left: 12px;
+	padding-right: 12px;
+}
+
+.nb-chip-off {
+	opacity: .6;
+	text-decoration: line-through;
+}
+
+/* Admin-only nesting cap — a number, not a text field's worth of width. */
+.nb-maxdepth .form-control {
+	max-width: 90px;
+}
+
+/* Live kind indicator sitting in the link field — the detector's only UI. */
+.nb-detect {
+	font-size: 12px;
+	min-width: 92px;
+	text-align: left;
+	white-space: nowrap;
+}
+
+/* ── Article combobox ───────────────────────────────────────────────────────────────────── */
+
+.nb-combo {
+	position: relative;
+}
+
+/* Floating and opaque on purpose: a translucent panel inside the form is exactly what made the
+   results read as "more form" instead of as results. Colours mirror be_style's .dropdown-menu. */
+.nb-listbox {
+	background: #fff;
+	border: 1px solid rgba(0, 0, 0, .15);
+	border-radius: 4px;
+	box-shadow: 0 6px 12px rgba(0, 0, 0, .175);
+	left: 0;
+	position: absolute;
+	right: 0;
+	top: 100%;
+	z-index: 1065;
+}
+
+body.rex-theme-dark .nb-listbox,
+body:not(.rex-theme-light) .nb-listbox {
+	background: #151c22;
+	border-color: #151c22;
+	box-shadow: 0 6px 12px rgba(0, 0, 0, .5);
+}
+
+.nb-listbox-head {
+	color: #888;
+	font-size: 11px;
+	letter-spacing: .04em;
+	margin: 0;
+	padding: 8px 12px 4px;
+	text-transform: uppercase;
+}
+
+.nb-results {
+	list-style: none;
+	margin: 0;
+	max-height: 240px;
+	overflow-y: auto;
+	padding: 0;
+}
+
+.nb-result {
+	align-items: center;
+	cursor: pointer;
+	display: flex;
+	gap: 10px;
+	padding: 8px 12px;
+	text-align: left;
+}
+
+.nb-listbox .nb-note {
+	padding: 10px 12px;
+}
+
+.nb-result + .nb-result {
+	border-top: 1px solid rgba(128, 128, 128, .2);
+}
+
+.nb-result-active {
+	background: rgba(51, 122, 183, .16);
+}
+
+.nb-result-current {
+	background: rgba(51, 122, 183, .28);
+}
+
+.nb-result-path {
+	color: #888;
+	font-size: 11px;
+	margin-left: auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* ── Focus ──────────────────────────────────────────────────────────────────────────────── */
+
+.nb :focus-visible,
+.nb-row:focus-visible {
+	outline: 2px solid #337ab7;
+	outline-offset: 1px;
+}
+
+/* The linkmap widget is only in the DOM so `openLinkMap()` has its input fields to write into. */
+.navbuilder-linkmap[hidden] {
+	display: none;
+}
