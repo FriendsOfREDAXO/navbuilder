@@ -58,7 +58,7 @@ API — `render()`/`tree()`/the deprecated shims all keep working during and aft
     { "id": "e5f6a7b8", "type": "link", "url": "https://example.com", "label": "External",
       "target": "_blank", "children": [] },
     { "id": "b1c2d3e4", "type": "media", "file": "brochure.pdf", "label": "Brochure",
-      "children": [] },
+      "target": "_blank", "children": [] },
     { "id": "c9d0e1f2", "type": "text", "label": "Service", "text": "<p>…</p>",
       "children": [] }
   ]
@@ -139,7 +139,8 @@ body will be discarded on apply — it is the one thing a conversion cannot carr
 restores the type **and** the body.
 
 **Media** is picked through the mediapool (the *Choose file* button, the same popup path the core
-widget uses); the file name field is deliberately readonly. **Text** items have a textarea for
+widget uses); the file name field is deliberately readonly. Like links, media items offer "open
+in new window" (`target="_blank"`). **Text** items have a textarea for
 HTML next to their label — see the warning under *Fragment overrides*.
 
 The edit form also shows the item's internal `id` (small, greyed, bottom right) — that is the
@@ -184,7 +185,7 @@ Every node returned by `tree()` (and passed to fragments):
 | `file` | `?string` | mediapool file name, only for `media` items (e.g. to branch on the extension) |
 | `articleId` | `?int` | only for `article` items |
 | `categoryId` | `?int` | category of that article (`0` at root level, the category itself for its start article); `null` for every other type |
-| `target` | `?string` | only for `link` items with an explicit target |
+| `target` | `?string` | only for `link` and `media` items with an explicit target |
 | `online` | bool | always `true` — offline/deleted articles are filtered out already |
 | `active` | bool | points at exactly the current article |
 | `activePath` | bool | active, an ancestor of it, or has an active descendant |

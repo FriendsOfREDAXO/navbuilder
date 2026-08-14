@@ -186,6 +186,7 @@
 				item.target = '_self';
 			} else if ('media' === type) {
 				item.file = '';
+				item.target = '_self';
 			} else if ('text' === type) {
 				item.text = '';
 			}
@@ -270,7 +271,13 @@
 						return;
 					}
 
-					mapped = { id: item.id, type: 'media', file: file, children: children };
+					mapped = {
+						id: item.id,
+						type: 'media',
+						file: file,
+						target: TARGETS.indexOf(item.target) >= 0 ? item.target : '_self',
+						children: children,
+					};
 
 					if ('' !== label) {
 						mapped.label = label;
@@ -683,6 +690,10 @@
 
 						if ('link' !== mode.value) {
 							item.url = null;
+						}
+
+						// Both link and media open a real URL — a target survives converting between them.
+						if ('link' !== mode.value && 'media' !== mode.value) {
 							item.target = null;
 						}
 
@@ -1005,6 +1016,10 @@
 						<label class="control-label" :for="'nb-m-' + item.id">{{ t.label }}</label>
 						<input class="form-control" type="text" :id="'nb-m-' + item.id" v-model="item.label" :placeholder="item.file">
 					</div>
+				</div>
+				<!-- Unlike the link form there is no mailto/tel case — a media url is always real. -->
+				<div class="checkbox">
+					<label><input type="checkbox" :checked="item.target === '_blank'" @change="item.target = $event.target.checked ? '_blank' : '_self'"> {{ t.new_window }}</label>
 				</div>
 			</template>
 

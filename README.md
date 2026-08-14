@@ -61,7 +61,7 @@ Migration unverändert.
     { "id": "e5f6a7b8", "type": "link", "url": "https://example.com", "label": "Extern",
       "target": "_blank", "children": [] },
     { "id": "b1c2d3e4", "type": "media", "file": "prospekt.pdf", "label": "Prospekt",
-      "children": [] },
+      "target": "_blank", "children": [] },
     { "id": "c9d0e1f2", "type": "text", "label": "Service", "text": "<p>…</p>",
       "children": [] }
   ]
@@ -148,7 +148,8 @@ ein Hinweis, dass der Inhalt beim Übernehmen entfernt wird — er ist das Einzi
 Umwandlung nicht mitnehmen kann. *Abbrechen* stellt Typ **und** Inhalt wieder her.
 
 **Medien** werden über den Medienpool gewählt (Button *Datei wählen*, derselbe Popup-Weg wie beim
-Core-Widget); das Dateinamensfeld ist bewusst nur lesbar. **Text**-Einträge haben neben der
+Core-Widget); das Dateinamensfeld ist bewusst nur lesbar. Wie bei Links gibt es "In neuem Fenster
+öffnen" (`target="_blank"`). **Text**-Einträge haben neben der
 Beschriftung ein Textfeld für HTML — siehe die Warnung unter *Fragmente überschreiben*.
 
 Das Bearbeiten-Formular zeigt zusätzlich die interne `id` des Eintrags (klein, grau, unten
@@ -193,7 +194,7 @@ Jeder Knoten aus `tree()` (und an die Fragmente übergeben):
 | `file` | `?string` | Dateiname aus dem Medienpool, nur bei `media`-Einträgen (z. B. für eine Verzweigung nach Endung) |
 | `articleId` | `?int` | nur bei `article`-Einträgen |
 | `categoryId` | `?int` | Kategorie des Artikels (`0` auf oberster Ebene, bei einem Startartikel die Kategorie selbst); `null` bei allen anderen Typen |
-| `target` | `?string` | nur bei `link`-Einträgen mit explizitem Ziel |
+| `target` | `?string` | nur bei `link`- und `media`-Einträgen mit explizitem Ziel |
 | `online` | bool | immer `true` — offline/gelöschte Artikel sind bereits herausgefiltert |
 | `active` | bool | zeigt genau auf den aktuellen Artikel |
 | `activePath` | bool | aktiv, Vorfahre davon oder mit aktivem Nachfahren |

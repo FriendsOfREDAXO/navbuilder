@@ -25,7 +25,7 @@ use rex_url;
  *     file        ?string  mediapool file name, only for media items
  *     articleId   ?int     only for article items
  *     categoryId  ?int     category of that article (0 at root level), null for other items
- *     target      ?string  only for link items with an explicit target
+ *     target      ?string  only for link and media items with an explicit target
  *     online      bool     always true in the returned tree (offline items are filtered out)
  *     active      bool     this item points at exactly the current article
  *     activePath  bool     active, an ancestor of the current article, or has an active descendant
@@ -200,6 +200,7 @@ final class Renderer
 				$node['file'] = $media->getFileName();
 				$node['label'] = '' !== $node['label'] ? $node['label'] : $node['file'];
 				$node['url'] = self::mediaUrl($node['file'], $ctx['absolute']);
+				$node['target'] = '_self' === ($item['target'] ?? '_self') ? null : (string) $item['target'];
 			} elseif ('text' === $type) {
 				// Raw HTML, exactly as the editor stored it — same trust level as a module textarea.
 				$node['text'] = (string) ($item['text'] ?? '');

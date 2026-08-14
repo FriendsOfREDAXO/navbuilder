@@ -22,7 +22,7 @@ use rex_url;
  *     {"v":2,"maxDepth":3,"items":[
  *       {"id":"a1b2c3d4","type":"article","articleId":12,"clang":null,"children":[],"label":"optional override"},
  *       {"id":"e5f6a7b8","type":"link","url":"https://…","label":"Extern","target":"_blank","children":[]},
- *       {"id":"b1c2d3e4","type":"media","file":"prospekt.pdf","label":"Prospekt","children":[]},
+ *       {"id":"b1c2d3e4","type":"media","file":"prospekt.pdf","label":"Prospekt","target":"_blank","children":[]},
  *       {"id":"c9d0e1f2","type":"text","label":"Service","text":"<p>…</p>","children":[]}
  *     ]}
  *
@@ -520,7 +520,15 @@ final class Navigation
 					continue;
 				}
 
-				$mapped = ['id' => $id, 'type' => 'media', 'file' => $file, 'children' => $children];
+				$target = (string) ($item['target'] ?? '_self');
+
+				$mapped = [
+					'id' => $id,
+					'type' => 'media',
+					'file' => $file,
+					'target' => in_array($target, self::TARGETS, true) ? $target : '_self',
+					'children' => $children,
+				];
 
 				if ('' !== $override) {
 					$mapped['label'] = $override;
