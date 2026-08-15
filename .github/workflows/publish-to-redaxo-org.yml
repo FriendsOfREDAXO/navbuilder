@@ -1,19 +1,43 @@
-# Instructions: https://github.com/FriendsOfREDAXO/installer-action/
+name: Publish release
 
-name: Publish to REDAXO.org
 on:
   release:
     types:
       - published
 
 jobs:
-  redaxo_publish:
+  build-release-and-redaxo_publish:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: FriendsOfREDAXO/installer-action@v1
-      with:
-        myredaxo-username: ${{ secrets.MYREDAXO_USERNAME }}
-        myredaxo-api-key: ${{ secrets.MYREDAXO_API_KEY }}
-        description: ${{ github.event.release.body }}
-        
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # No composer install: the addon ships without runtime dependencies
+      # (composer.json is dev tooling only and excluded below).
+      - name: Create release archive
+        run: |
+          zip -r ${{ github.event.repository.name }}.zip . \
+            -x "${{ github.event.repository.name }}.zip" \
+            -x "*.git*" \
+            -x "*node_modules*" \
+            -x "*vendor/*" \
+            -x "*tests/*" \
+            -x "*phpunit.xml*" \
+            -x "composer.json" \
+            -x "composer.lock" \
+            -x "CLAUDE.md" \
+            -x "*.DS_Store" \
+            -x "*Thumbs.db" \
+            -x "*.editorconfig"
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ github.event.repository.name }}.zip
+          name: ${{ github.event.repository.name }}-${{ github.event.release.tag_name }}.zip
+
+      - uses: FriendsOfREDAXO/installer-action@v1
+        with:
+          myredaxo-username: ${{ secrets.MYREDAXO_USERNAME }}
+          myredaxo-api-key: ${{ secrets.MYREDAXO_API_KEY }}
+          description: ${{ github.event.release.body }}
