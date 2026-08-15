@@ -206,9 +206,16 @@
 				.catch(() => []);
 		}
 
-		/** Seed suggestions for the url picker — same caveat as `seed()`: first 30, never complete. */
-		function urlSeed() {
-			return Array.isArray(init.urls) ? init.urls.slice() : [];
+		/**
+		 * Seed suggestions for the url picker — same caveat as `seed()`: first 30, never
+		 * complete. An active profile filter narrows the seeds too, so a reseed (after a
+		 * pick) cannot show entries the visible filter claims to exclude; a profile past
+		 * the first 30 seeds just starts empty until the first keystroke searches properly.
+		 */
+		function urlSeed(profile) {
+			const list = Array.isArray(init.urls) ? init.urls.slice() : [];
+
+			return profile ? list.filter((entry) => entry.profile === profile) : list;
 		}
 
 		function fetchUrls(q, profile) {
@@ -760,7 +767,7 @@
 					item._profile = entry.profile;
 					urlItemError.value = '';
 					uQuery.value = '';
-					uResults.value = urlSeed();
+					uResults.value = urlSeed(uProfile.value);
 					uCloseList();
 				}
 
