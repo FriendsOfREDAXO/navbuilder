@@ -436,6 +436,17 @@ final class Navigation
 
 				$item['_exists'] = null !== $media;
 				$item['_url'] = null !== $media ? rex_url::media($media->getFileName()) : '';
+			} elseif ('url' === ($item['type'] ?? '')) {
+				// No enrichment without the addon: the editor shows its own "addon missing"
+				// flag via features.url — a false `_exists` here would claim "deleted" instead.
+				if (UrlAddon::available()) {
+					$resolved = UrlAddon::find((int) ($item['profileId'] ?? 0), (int) ($item['dataId'] ?? 0), $clang);
+
+					$item['_exists'] = null !== $resolved;
+					$item['_label'] = null !== $resolved ? $resolved['label'] : '';
+					$item['_url'] = null !== $resolved ? $resolved['path'] : '';
+					$item['_profile'] = UrlAddon::namespaceOf((int) ($item['profileId'] ?? 0));
+				}
 			}
 
 			$item['children'] = self::enrich($item['children'] ?? [], $clang);

@@ -18,14 +18,16 @@ use rex_url;
  * Every node of {@see self::get()} exposes:
  *
  *     id          string   stable item id
- *     type        string   article|link|media|text
+ *     type        string   article|link|media|text|url
  *     label       string   article name, media file name, deliberate override, link/text label
  *     url         ?string  null for text items
  *     text        ?string  raw HTML, only for text items
  *     file        ?string  mediapool file name, only for media items
  *     articleId   ?int     only for article items
  *     categoryId  ?int     category of that article (0 at root level), null for other items
- *     target      ?string  only for link and media items with an explicit target
+ *     profileId   ?int     url-addon profile id, only for url items
+ *     dataId      ?int     url-addon dataset id, only for url items
+ *     target      ?string  only for link, media and url items with an explicit target
  *     online      bool     always true in the returned tree (offline items are filtered out)
  *     active      bool     this item points at exactly the current article
  *     activePath  bool     active, an ancestor of the current article, or has an active descendant
@@ -159,6 +161,8 @@ final class Renderer
 				'file' => null,
 				'articleId' => null,
 				'categoryId' => null,
+				'profileId' => null,
+				'dataId' => null,
 				'target' => null,
 				'online' => true,
 				'active' => false,
@@ -201,6 +205,25 @@ final class Renderer
 				$node['label'] = '' !== $node['label'] ? $node['label'] : $node['file'];
 				$node['url'] = self::mediaUrl($node['file'], $ctx['absolute']);
 				$node['target'] = '_self' === ($item['target'] ?? '_self') ? null : (string) $item['target'];
+			} elseif ('url' === $type) {
+				$profileId = (int) ($item['profileId'] ?? 0);
+				$dataId = (int) ($item['dataId'] ?? 0);
+				$resolved = UrlAddon::find($profileId, $dataId, $ctx['clang']);
+
+				// Missing addon (logged once), missing clang row or deleted dataset — same
+				// rule as a deleted article: gone from the frontend, flagged in the backend.
+				if (null === $resolved) {
+					continue;
+				}
+
+				$node['profileId'] = $profileId;
+				$node['dataId'] = $dataId;
+				// The generator's seo title is render-time resolution, not a navbuilder cache —
+				// the url addon keeps it current. An empty title falls back to the path.
+				$node['label'] = '' !== $node['label'] ? $node['label'] : ('' !== $resolved['label'] ? $resolved['label'] : $resolved['path']);
+				$node['url'] = $ctx['absolute'] ? $resolved['absolute'] : $resolved['path'];
+				$node['target'] = '_self' === ($item['target'] ?? '_self') ? null : (string) $item['target'];
+				$node['active'] = self::isCurrentPath($resolved['path']);
 			} elseif ('text' === $type) {
 				// Raw HTML, exactly as the editor stored it — same trust level as a module textarea.
 				$node['text'] = (string) ($item['text'] ?? '');
@@ -230,6 +253,18 @@ final class Renderer
 		}
 
 		return false;
+	}
+
+	/**
+	 * A url item is "the current page" when the request path equals its generated path. The
+	 * url addon resolves every dataset page onto the profile's mount article, so `currentId`
+	 * cannot tell one dataset from another — path equality (trailing slash ignored) can.
+	 */
+	private static function isCurrentPath(string $path): bool
+	{
+		$request = (string) parse_url(rex_server('REQUEST_URI', 'string', ''), PHP_URL_PATH);
+
+		return '' !== $request && rtrim($request, '/') === rtrim($path, '/');
 	}
 
 	private static function url(int $articleId, int $clang, bool $absolute): string
