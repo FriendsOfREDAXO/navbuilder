@@ -179,6 +179,46 @@ final class NavigationTest extends TestCase
 		self::assertStringContainsString('item limit', implode(' ', rex_logger::$messages));
 	}
 
+	// ── url addon items ─────────────────────────────────────────────────────────────────────
+
+	public function testUrlItemsNormalize(): void
+	{
+		$items = Navigation::decode(json_encode([[
+			'id' => 'u1a2b3c4', 'type' => 'url', 'profileId' => '3', 'dataId' => 17,
+			'label' => 'Override', 'target' => '_blank',
+			'_label' => 'transient', '_url' => '/x/', '_exists' => true, '_profile' => 'restaurant',
+			'children' => [],
+		]]));
+
+		self::assertSame([[
+			'id' => 'u1a2b3c4', 'type' => 'url', 'profileId' => 3, 'dataId' => 17,
+			'target' => '_blank', 'children' => [], 'label' => 'Override',
+		]], $items);
+	}
+
+	public function testUrlItemWithoutOverrideStoresNoLabel(): void
+	{
+		$items = Navigation::decode(json_encode([[
+			'id' => 'u1a2b3c4', 'type' => 'url', 'profileId' => 3, 'dataId' => 17, 'children' => [],
+		]]));
+
+		self::assertSame('_self', $items[0]['target'], 'missing target must coerce to _self');
+		self::assertArrayNotHasKey('label', $items[0], 'no override means no stored label');
+	}
+
+	public function testUrlItemWithInvalidReferenceIsDroppedInBothModes(): void
+	{
+		$broken = json_encode([[
+			'id' => 'u1a2b3c4', 'type' => 'url', 'profileId' => 0, 'dataId' => 'x', 'children' => [],
+		]]);
+
+		// Mirrors the non-numeric article reference: dropped + logged, never a strict throw —
+		// the editor's own clean() cannot post an incomplete url item in the first place.
+		self::assertSame([], Navigation::decode($broken));
+		self::assertSame([], Navigation::decode($broken, true));
+		self::assertStringContainsString('invalid url-addon reference', implode(' ', rex_logger::$messages));
+	}
+
 	// ── encode / maxDepth ───────────────────────────────────────────────────────────────────
 
 	public function testEncodeEnvelope(): void
