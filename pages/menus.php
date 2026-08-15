@@ -27,7 +27,10 @@
  *          { "id": "b1c2d3e4", "type": "media", "file": "prospekt.pdf", "label": "Prospekt",
  *            "children": [], "_exists": true, "_url": "/media/prospekt.pdf" },
  *          { "id": "c9d0e1f2", "type": "text", "label": "Service", "text": "<p>…</p>",
- *            "children": [] }
+ *            "children": [] },
+ *          { "id": "d3e4f5a6", "type": "url", "profileId": 3, "dataId": 17, "target": "_self",
+ *            "children": [], "_exists": true, "_label": "Pizzeria Toni",
+ *            "_url": "/restaurants/pizzeria-toni/", "_profile": "restaurant" }
  *        ]
  *      },
  *      "clangs":  [ { "id": 1, "code": "de", "name": "Deutsch" } ],  // for the visibility chips
@@ -39,11 +42,16 @@
  *                  // so the picker has something to show before the first keystroke. Any site
  *                  // with more than 30 articles is truncated silently, so the picker MUST query
  *                  // api.autocompleteUrl for real lookups and must never treat this as complete.
+ *      "features": { "url": true },            // url addon installed? gates the URL item type
+ *      "urls": [ { "profileId": 3, "dataId": 17, "name": "…", "profile": "restaurant", "url": "/…/" } ],
+ *                  // seed suggestions, same caveat as `articles`: first 30 only, never complete
+ *      "urlProfiles": [ { "id": 3, "namespace": "restaurant" } ],   // for the picker's filter
 
  *      "api": {
  *        "autocompleteUrl": "…/index.php?rex-api-call=navbuilder_articles",
  *        "csrfToken": "…",                     // token for the api endpoint (id = Api class name)
- *        "csrfField": "_csrf_token"            // request parameter name for the token
+ *        "csrfField": "_csrf_token",           // request parameter name for the token
+ *        "urlAutocompleteUrl": "…rex-api-call=navbuilder_urls"    // + urlCsrfToken for it
  *      },
  *      "linkmap": {
  *        "fieldId":     "REX_LINK_navbuilder",       // hidden input, receives the chosen article id
@@ -84,6 +92,8 @@ declare(strict_types=1);
 
 use FriendsOfRedaxo\NavBuilder\Api;
 use FriendsOfRedaxo\NavBuilder\Navigation;
+use FriendsOfRedaxo\NavBuilder\UrlAddon;
+use FriendsOfRedaxo\NavBuilder\UrlApi;
 
 /** @var rex_addon $this */
 
@@ -215,6 +225,10 @@ $init = [
 	'formId' => $formId,
 	'structure' => ['v' => Navigation::SCHEMA_VERSION, 'maxDepth' => $maxDepth, 'items' => $items],
 	'articles' => Api::searchArticles(''),
+	// The url addon is an optional peer — the server decides, the client never probes.
+	'features' => ['url' => UrlAddon::available()],
+	'urls' => UrlAddon::search(''),
+	'urlProfiles' => UrlAddon::profiles(),
 	'clangs' => array_map(
 		static fn (rex_clang $clang): array => ['id' => $clang->getId(), 'code' => $clang->getCode(), 'name' => $clang->getName()],
 		array_values(rex_clang::getAll()),
@@ -225,6 +239,8 @@ $init = [
 		'autocompleteUrl' => rex_url::backendController(['rex-api-call' => 'navbuilder_articles'], false),
 		'csrfToken' => rex_csrf_token::factory(Api::tokenId())->getValue(),
 		'csrfField' => rex_csrf_token::PARAM,
+		'urlAutocompleteUrl' => rex_url::backendController(['rex-api-call' => 'navbuilder_urls'], false),
+		'urlCsrfToken' => rex_csrf_token::factory(UrlApi::tokenId())->getValue(),
 	],
 	'linkmap' => [
 		'fieldId' => 'REX_LINK_' . $linkmapId,
@@ -242,15 +258,15 @@ $init = [
 
 // Keys handed to the app, without the `navbuilder_js_` prefix. Keep in sync with lang/*.lang.
 $jsKeys = [
-	'add_article', 'add_below', 'add_link', 'add_media', 'add_text', 'apply', 'article', 'cancel',
-	'choose_article', 'choose_media', 'article_required', 'confirm_remove', 'deleted', 'duplicate',
+	'add_article', 'add_below', 'add_link', 'add_media', 'add_text', 'add_url', 'apply', 'article', 'cancel',
+	'choose_article', 'choose_media', 'choose_url', 'article_required', 'confirm_remove', 'deleted', 'duplicate',
 	'edit', 'empty', 'file', 'hidden_everywhere', 'hidden_in', 'item_id',
 	'item_type', 'kind_email',
 	'kind_tel', 'kind_url', 'label', 'label_override', 'link', 'link_kind', 'link_placeholder',
 	'link_value', 'max_depth', 'max_depth_hint', 'media', 'media_required', 'move_down', 'move_in',
 	'move_out', 'move_up', 'new_window', 'no_results', 'offline',
 	'remove', 'search', 'search_placeholder', 'suggestions', 'text', 'text_content', 'text_discarded',
-	'url_required',
+	'url', 'url_addon_missing', 'url_all_profiles', 'url_item_required', 'url_profile', 'url_required',
 	'url_scheme', 'visible_in',
 ];
 
