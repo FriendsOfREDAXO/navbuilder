@@ -44,6 +44,11 @@ New schema-v2 item type `url`, alongside `article` / `link` / `media` / `text`:
 - `Navigation::normalizeItems()`: `profileId` and `dataId` must both be
   numeric and ≥ 1. Strict mode rejects the payload; lenient mode drops the
   item with a warning, mirroring the non-numeric article-reference handling.
+  *Resolution (implementation):* the two sentences above conflict — the
+  article handling drops + logs in **both** modes and never throws. The
+  mirror clause governs: invalid references drop + log in both modes; the
+  editor's own `clean()` cannot post a half-filled reference in the first
+  place. Decided during planning, verified by tests.
 - **No schema version bump.** v2 gains a type. A downgrade to an older
   NavBuilder version would drop `url` items with a warning on the next save;
   this is accepted and noted in the CHANGELOG.
