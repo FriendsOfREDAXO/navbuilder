@@ -6,7 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NavBuilder is a REDAXO 5 addon (PHP >= 8.1, REDAXO ^5.18, structure ^2.9): a drag & drop navigation editor in the backend, rendered in the frontend through overridable fragments. It is developed standalone here but runs inside a REDAXO installation under `redaxo/src/addons/navbuilder/`.
 
-There is **no build step, no test suite, no linter config, and no dependencies**: Vue 3 ships prebuilt as `assets/vue.global.prod.js` (no CDN), `assets/navbuilder.js` is plain JS (Composition API, template strings, no jQuery). Verification means reading the code and, if a REDAXO instance is available, exercising the backend page.
+There is **no build step and no runtime dependencies**: Vue 3 ships prebuilt as `assets/vue.global.prod.js` (no CDN); the editor is plain JS (Composition API, template strings, no jQuery) split into `assets/navbuilder-core.js` (pure logic, exposed as frozen `window.NavBuilderCore`, require()-able by Node) and `assets/navbuilder.js` (Vue app; boot.php loads core first).
+
+## Commands
+
+- `composer install` once, then `vendor/bin/phpunit` — PHP tests (`tests/php/`, REDAXO stubbed in `tests/php/bootstrap.php`; only Navigation's pure schema surface, DB paths are exercised in a real instance).
+- `node --test "tests/js/**/*.test.mjs"` — tests for `navbuilder-core.js` (a bare directory argument does not work).
+- `php -l <file>` / `node --check <file>` for syntax. CI (`.github/workflows/ci.yml`) runs all of the above.
 
 ## Architecture
 

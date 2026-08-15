@@ -45,7 +45,11 @@ Wird 2.0 über eine bestehende 1.x-Installation aktiviert, läuft `update.php` u
 
 Die Migration ist **idempotent**: Zeilen mit `"v":2` werden übersprungen, `update.php` kann also
 beliebig oft laufen. Nicht-numerische `href`-Werte an einem v1-`intern`-Eintrag werden verworfen
-und über `rex_logger` protokolliert, statt als Müll migriert zu werden. Die Frontend-API bleibt
+und über `rex_logger` protokolliert, statt als Müll migriert zu werden. Musste die Migration
+Einträge verwerfen, nennt die Update-Meldung deren Anzahl (Details im Systemlog). Vor dem Update
+werden die vorhandenen Namen geprüft: Namen über 191 Zeichen brechen das Update mit einer klaren
+Meldung ab (vorher kürzen), Nicht-Slug-Namen werden im Systemlog gemeldet — sie funktionieren
+weiter über `rex_navbuilder::render()`, sind aber per `REX_NAVBUILDER[name=…]` nicht adressierbar. Die Frontend-API bleibt
 davon unberührt — `render()`/`tree()`/die veralteten Shims funktionieren während und nach der
 Migration unverändert.
 

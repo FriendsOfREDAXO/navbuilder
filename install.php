@@ -9,8 +9,10 @@ $table = rex::getTable('navbuilder_navigation');
 rex_sql_table::get($table)
 	->ensurePrimaryIdColumn()
 	->ensureColumn(new rex_sql_column('name', 'varchar(191)', true))
-	->ensureColumn(new rex_sql_column('structure', 'text', true))
-	->ensureColumn(new rex_sql_column('structure_legacy', 'text', true))
+	// MEDIUMTEXT: a legal tree (1000 items, or one long text body) overflows TEXT's 64KB, and a
+	// truncated JSON column decodes as an empty navigation. save() enforces Navigation::MAX_BYTES.
+	->ensureColumn(new rex_sql_column('structure', 'mediumtext', true))
+	->ensureColumn(new rex_sql_column('structure_legacy', 'mediumtext', true))
 	->ensureColumn(new rex_sql_column('updated_at', 'datetime', true))
 	->ensure();
 

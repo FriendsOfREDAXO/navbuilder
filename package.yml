@@ -19,9 +19,17 @@ page:
 requires:
     packages:
         structure: '^2.9.0'
+        mediapool: '^2.9.0'
     redaxo: '^5.18.0'
     php:
         version: '>=8.1'
 
 installer_ignore:
     - .github
+    - .gitignore
+    - CLAUDE.md
+    - composer.json
+    - composer.lock
+    - phpunit.xml.dist
+    - tests
+    - vendor

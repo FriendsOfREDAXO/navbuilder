@@ -16,109 +16,13 @@
 (function () {
 	'use strict';
 
+	// The pure, Node-testable half lives in navbuilder-core.js (loaded first by boot.php).
+	const { uid, isSafeUrl, detectKind, splitLink, buildLink, clean } = window.NavBuilderCore;
+
 	/** Item fields the editor may change — used for the edit-form snapshot (cancel = revert). */
 	const EDITABLE = ['type', 'articleId', 'clang', 'label', 'url', 'target', 'file', 'text', 'hiddenIn', '_label', '_online', '_url', '_exists'];
 
-	const TARGETS = ['_self', '_blank', '_top'];
-
-	/** Mirrors Navigation::SCHEMES — everything a `link` item may point at. */
-	const SCHEMES = ['http', 'https', 'mailto', 'tel'];
-
 	const SEARCH_DELAY = 250;
-
-	/** Matches the server's id format: [A-Za-z0-9_-]{1,32}. */
-	const uid = () => Math.random().toString(36).slice(2, 10);
-
-	/**
-	 * UX-only mirror of Navigation::isSafeUrl() — the server re-validates and stays authoritative.
-	 * Strips control characters first, same as the server does before checking (and storing).
-	 */
-	function isSafeUrl(url) {
-		const clean = url.replace(/[\x00-\x1f\x7f]/g, '');
-
-		if (/^[/#?]/.test(clean)) {
-			return true;
-		}
-
-		const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(clean);
-
-		return !scheme || SCHEMES.indexOf(scheme[1].toLowerCase()) >= 0;
-	}
-
-	/**
-	 * One input for url, email address and phone number.
-	 *
-	 * The three helpers below are an input aid only: they decide which prefix a bare value gets,
-	 * they never decide whether a value is allowed. `mailto:` and `tel:` are in the scheme
-	 * allowlist above (and in Navigation::SCHEMES), so whatever buildLink() produces goes through
-	 * exactly the same isSafeUrl() pre-check as a hand-typed url — and the server re-validates.
-	 */
-	function detectKind(value) {
-		const clean = String(value || '').trim();
-		const scheme = /^(mailto|tel):/i.exec(clean);
-
-		if (scheme) {
-			return 'mailto' === scheme[1].toLowerCase() ? 'email' : 'tel';
-		}
-
-		// Anything with its own scheme or a relative start is a plain url — no guessing.
-		if ('' === clean || /^[a-z][a-z0-9+.-]*:/i.test(clean) || /^[/#?]/.test(clean)) {
-			return 'url';
-		}
-
-		if (clean.indexOf('@') > 0 && clean.indexOf('/') < 0) {
-			return 'email';
-		}
-
-		// Separators only count as a phone number on something dialable (`+…` or a trunk `0`) —
-		// otherwise `192.168.1.10` and `2024/12/31` would ring.
-		return /^\+?[\d\s()./-]+$/.test(clean)
-			&& clean.replace(/\D/g, '').length >= 5
-			&& (!/[/.]/.test(clean) || /^[+0]/.test(clean))
-			? 'tel'
-			: 'url';
-	}
-
-	/**
-	 * Strips the scheme for display — but only when the bare remainder still reads as the same
-	 * kind, because buildLink() would not put the scheme back otherwise (`tel:0800-REDAXO`,
-	 * `mailto:a@b.c?body=see/x`). Those stay visible in full and round-trip untouched.
-	 */
-	function splitLink(url) {
-		const match = /^(mailto|tel):(.*)$/i.exec(String(url || ''));
-		const kind = match && ('mailto' === match[1].toLowerCase() ? 'email' : 'tel');
-
-		return match && detectKind(match[2]) === kind ? match[2] : String(url || '');
-	}
-
-	function buildLink(value) {
-		const clean = String(value || '').trim();
-
-		// Already carries a scheme (including a typed mailto:/tel:) — never prefix twice.
-		if ('' === clean || /^[a-z][a-z0-9+.-]*:/i.test(clean)) {
-			return clean;
-		}
-
-		const kind = detectKind(clean);
-
-		if ('email' === kind) {
-			return 'mailto:' + clean;
-		}
-
-		// `tel:` breaks in several clients on spaces and separators; keep digits and a leading +.
-		if ('tel' === kind) {
-			return 'tel:' + clean.replace(/[^\d+]/g, '');
-		}
-
-		// A pure hostname (`example.com`, `sub.example.ch:8080`) or an explicit `www.` is a url
-		// with the scheme left out. Anything else containing a slash stays byte-untouched — a
-		// document-relative path (`downloads/broschuere.pdf`) is valid input here, and turning it
-		// into an absolute url would break it. `example.com/path` losing the convenience is the
-		// price for that; relative targets and anything with a space are left alone too.
-		const host = clean.indexOf('/') < 0 || /^www\./i.test(clean);
-
-		return host && !/^[/#?]/.test(clean) && !/\s/.test(clean) && clean.indexOf('.') > 0 ? 'https://' + clean : clean;
-	}
 
 	function ready(fn) {
 		if ('loading' === document.readyState) {
@@ -141,7 +45,7 @@
 	});
 
 	function start(Vue, init, mount) {
-		const { createApp, reactive, ref, computed, watch, nextTick } = Vue;
+		const { createApp, reactive, ref, computed, watch, nextTick, onBeforeUnmount } = Vue;
 
 		const t = init.i18n || {};
 		const api = init.api || {};
@@ -152,6 +56,9 @@
 		const form = document.getElementById(init.formId) || (output ? output.closest('form') : null);
 		const items = reactive(normalize((init.structure || {}).items));
 		const dnd = reactive({ item: null, list: null, over: null, pos: '' });
+
+		/** Open edit forms by item id → their apply function. Save applies them all first. */
+		const openForms = new Map();
 
 		/** Navigation-wide settings living on the structure root, not on an item. */
 		const HARD_DEPTH = parseInt(init.maxDepthLimit, 10) > 0 ? parseInt(init.maxDepthLimit, 10) : 10;
@@ -222,91 +129,6 @@
 
 		// ── Serialization ───────────────────────────────────────────────────────────────────
 
-		/** Whitelisting counterpart of Navigation::normalizeItems() — drops `_` transients and half-filled items. */
-		function clean(list) {
-			const out = [];
-
-			(list || []).forEach((item) => {
-				const children = clean(item.children);
-				const label = String(item.label || '').trim();
-				let mapped = null;
-
-				if ('article' === item.type) {
-					const articleId = parseInt(item.articleId, 10);
-
-					if (!(articleId > 0)) {
-						return;
-					}
-
-					mapped = {
-						id: item.id,
-						type: 'article',
-						articleId: articleId,
-						clang: parseInt(item.clang, 10) > 0 ? parseInt(item.clang, 10) : null,
-						children: children,
-					};
-
-					if ('' !== label) {
-						mapped.label = label;
-					}
-				} else if ('link' === item.type) {
-					const url = String(item.url || '').trim();
-
-					if ('' === url) {
-						return;
-					}
-
-					mapped = {
-						id: item.id,
-						type: 'link',
-						url: url,
-						label: '' !== label ? label : url,
-						target: TARGETS.indexOf(item.target) >= 0 ? item.target : '_self',
-						children: children,
-					};
-				} else if ('media' === item.type) {
-					const file = String(item.file || '').trim();
-
-					if ('' === file) {
-						return;
-					}
-
-					mapped = {
-						id: item.id,
-						type: 'media',
-						file: file,
-						target: TARGETS.indexOf(item.target) >= 0 ? item.target : '_self',
-						children: children,
-					};
-
-					if ('' !== label) {
-						mapped.label = label;
-					}
-				} else if ('text' === item.type) {
-					const text = String(item.text || '').trim();
-
-					mapped = { id: item.id, type: 'text', label: label, children: children };
-
-					if ('' !== text) {
-						mapped.text = text;
-					}
-				} else {
-					return;
-				}
-
-				// Absent means "visible everywhere" — an empty list would only be noise in storage.
-				const hiddenIn = (item.hiddenIn || []).map(Number).filter((id) => id > 0);
-
-				if (hiddenIn.length) {
-					mapped.hiddenIn = hiddenIn;
-				}
-
-				out.push(mapped);
-			});
-
-			return out;
-		}
-
 		function serialize() {
 			if (!output) {
 				return;
@@ -325,7 +147,20 @@
 
 		// On submit (the actual save) and on every mutation, so the input never lags behind the tree.
 		if (form) {
-			form.addEventListener('submit', serialize);
+			form.addEventListener('submit', (event) => {
+				// Apply every open edit form first — Save must not post half-edited state, and a
+				// form whose apply would fail (bad url, empty conversion target) blocks the submit
+				// so its inline error is seen instead of a full-page rejection.
+				for (const apply of Array.from(openForms.values())) {
+					if (false === apply()) {
+						event.preventDefault();
+
+						return;
+					}
+				}
+
+				serialize();
+			});
 		}
 
 		watch(items, serialize, { deep: true });
@@ -484,6 +319,7 @@
 				});
 
 				let timer = 0;
+				let lastRequest = 0;
 				let snapshot = null;
 
 				const broken = computed(() => (('article' === item.type && parseInt(item.articleId, 10) > 0)
@@ -588,6 +424,17 @@
 					if (at >= 0) {
 						props.list.splice(at, 1);
 					}
+
+					openForms.delete(item.id);
+				}
+
+				// A row deleted (or unmounted for any reason) must not leave a stale apply behind.
+				onBeforeUnmount(() => openForms.delete(item.id));
+
+				// A freshly added item mounts with its form already open (makeItem sets `_edit`),
+				// so it registers here instead of via toggleEdit.
+				if (item._edit) {
+					openForms.set(item.id, () => close(false));
 				}
 
 				function remove() {
@@ -633,8 +480,10 @@
 					articleError.value = '';
 					mediaError.value = '';
 					item._edit = true;
+					openForms.set(item.id, () => close(false));
 				}
 
+				/** @returns {boolean} false when validation kept the form open */
 				function close(revert) {
 					// UX-only pre-check ahead of the server's strict rejection — keep the form open so
 					// the user can fix the url instead of losing it to a full-page error.
@@ -644,7 +493,7 @@
 						if ('' !== url && !isSafeUrl(url)) {
 							urlError.value = t.url_scheme;
 
-							return;
+							return false;
 						}
 					}
 
@@ -655,19 +504,19 @@
 						if ('article' === mode.value && !(parseInt(item.articleId, 10) > 0)) {
 							articleError.value = t.article_required;
 
-							return;
+							return false;
 						}
 
 						if ('link' === mode.value && '' === String(address.value).trim()) {
 							urlError.value = t.url_required;
 
-							return;
+							return false;
 						}
 
 						if ('media' === mode.value && '' === String(item.file || '').trim()) {
 							mediaError.value = t.media_required;
 
-							return;
+							return false;
 						}
 					}
 
@@ -718,11 +567,14 @@
 					mediaError.value = '';
 					snapshot = null;
 					item._edit = false;
+					openForms.delete(item.id);
 
 					// A picker the user never filled in would only be dropped on save anyway.
 					if (isIncomplete(item)) {
 						removeSelf();
 					}
+
+					return true;
 				}
 
 				// ── Article combobox ──────────────────────────────────────────────────────
@@ -761,9 +613,15 @@
 					active.value = -1;
 					window.clearTimeout(timer);
 					timer = window.setTimeout(() => {
+						// Clearing the timer cannot cancel an in-flight fetch — only the latest
+						// request may write, or a slow early response overtakes a newer one.
+						const request = ++lastRequest;
+
 						fetchArticles(query.value).then((found) => {
-							results.value = found;
-							active.value = -1;
+							if (request === lastRequest) {
+								results.value = found;
+								active.value = -1;
+							}
 						});
 					}, SEARCH_DELAY);
 				}

@@ -43,7 +43,11 @@ Activating 2.0 over an existing 1.x install runs `update.php`, which:
 
 The migration is **idempotent**: rows already carrying `"v":2` are skipped, so `update.php` can
 be run any number of times. `href` values that aren't numeric on a v1 `intern` item are dropped
-and logged via `rex_logger` rather than migrated as garbage. Nothing here touches the frontend
+and logged via `rex_logger` rather than migrated as garbage. If the migration had to drop items,
+the update message names the count (details in the system log). Before updating, existing names
+are preflighted: names longer than 191 characters abort the update with a clear message (shorten
+them first), non-slug names are reported in the system log — they keep working via
+`rex_navbuilder::render()` but cannot be addressed with `REX_NAVBUILDER[name=…]`. Nothing here touches the frontend
 API — `render()`/`tree()`/the deprecated shims all keep working during and after the migration.
 
 ## Data model (v2)

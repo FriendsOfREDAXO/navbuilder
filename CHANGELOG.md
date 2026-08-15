@@ -2,6 +2,30 @@
 
 ## 2.0.0
 
+### Hardening pass (pre-release audit)
+
+- `structure`/`structure_legacy` are `MEDIUMTEXT` now — a legal tree (or one long text body)
+  overflows `TEXT`'s 64KB, and truncated JSON decodes as an *empty* navigation. `save()`
+  additionally enforces `Navigation::MAX_BYTES`.
+- A save whose payload is unparseable JSON is **rejected** instead of silently stored as an
+  empty navigation; updating a navigation deleted in the meantime is rejected too.
+- After a refused save the editor gets the posted tree back **verbatim** (including the item
+  whose url was refused — it used to be dropped by the re-render) and keeps the posted name.
+- Page-Save first applies every open edit form; a form that would fail its apply (bad url,
+  empty conversion target) blocks the submit and shows its inline error.
+- `update.php` preflights v1 names (aborts on >191 chars, warns about non-slug names) and the
+  migration reports how many items it had to drop (details in the system log, original in
+  `structure_legacy`). The silent item-count overflow drop is logged now.
+- The article-autocomplete API requires the `navbuilder[]` permission (CSRF alone is not
+  authorization); `mediapool` is a declared dependency; the init script carries the CSP nonce.
+- `host:port` urls (`sub.example.ch:8080`) are recognized as such in the editor — the client
+  treated them as an unknown scheme and refused what the server accepts.
+- Article autocomplete ignores out-of-order responses; a slow early query can no longer
+  overwrite newer results.
+- The pure editor logic lives in `assets/navbuilder-core.js` (`window.NavBuilderCore`), unit
+  tested via `node --test`; PHPUnit covers the schema/migration surface; CI runs both.
+- Vendored Vue bumped to 3.5.41.
+
 Complete rewrite. `~440` LOC of PHP/JS plus a 1173-line vendored jQuery drag & drop plugin
 become a fragment-based renderer, a validated v2 data model, and a vendored Vue 3 backend editor
 — no build step, no CDN, no jQuery.
@@ -33,8 +57,7 @@ become a fragment-based renderer, a validated v2 data model, and a vendored Vue 
 
 ### Fixed
 
-Security-relevant defects found during the pre-rewrite analysis (`B`-numbers refer to
-`.superpowers/navbuilder-analysis.md` §2.2):
+Security-relevant defects found during the pre-rewrite analysis:
 
 - **B1** — no CSRF protection on save/delete. Save/delete/duplicate now require a valid
   `rex_csrf_token`; the article-autocomplete API endpoint is CSRF-protected too.

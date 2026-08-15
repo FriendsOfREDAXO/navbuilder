@@ -125,21 +125,21 @@ if (in_array($func, ['save', 'delete', 'duplicate'], true)) {
 			echo rex_view::error(rex_escape($e->getMessage()));
 			$func = $id > 0 ? 'edit' : 'add';
 
-			// Re-render from the posted structure instead of the (unchanged) DB row. The strict
-			// decode is tried first because it is the only one that keeps an over-deep tree
-			// untruncated — exactly the tree the editor now has to fix. If the payload *also*
-			// carries a refused url, strict throws, and the lossy decode (drops + logs that one
-			// item, keeps the rest) is the better of the two.
+			// Re-render from the posted structure instead of the (unchanged) DB row — and without
+			// normalizeItems(), which would drop exactly the item whose url was just refused.
+			// The editor must get the tree back verbatim to fix it; its own normalize()/clean()
+			// tolerate unknown shapes, and the next save re-validates everything anyway.
 			if (isset($config)) {
-				$raw = (string) ($config['structure'] ?? '');
+				$data = json_decode((string) ($config['structure'] ?? ''), true);
+				$posted = is_array($data) ? ($data['items'] ?? $data) : [];
 
 				try {
-					$posted = Navigation::decode($raw, true);
-				} catch (rex_functional_exception) {
-					$posted = Navigation::decode($raw, false);
+					$saveErrorItems = Navigation::enrich(is_array($posted) ? $posted : []);
+				} catch (Throwable) {
+					// Structurally broken beyond what enrich() tolerates — fall back to the
+					// normalized (lossy) tree rather than a blank editor.
+					$saveErrorItems = Navigation::enrich(Navigation::decode((string) ($config['structure'] ?? '')));
 				}
-
-				$saveErrorItems = Navigation::enrich($posted);
 			}
 		}
 	}
@@ -194,7 +194,11 @@ if ($id > 0 && null === $navigation) {
 	return;
 }
 
-$name = null !== $navigation ? $navigation->name : '';
+// After a failed save the posted name wins — reloading the DB name (or '' for a new navigation)
+// would throw away what the user just typed along with the error they have to fix.
+$name = null !== $saveErrorItems && isset($config)
+	? (string) ($config['name'] ?? '')
+	: (null !== $navigation ? $navigation->name : '');
 $items = null !== $saveErrorItems ? $saveErrorItems : (null !== $navigation ? Navigation::enrich($navigation->items) : []);
 $maxDepth = null !== $saveErrorItems && isset($config)
 	? Navigation::decodeMaxDepth((string) ($config['structure'] ?? ''))
@@ -300,6 +304,6 @@ $content = $fragment->parse('core/page/section.php');
 	<?= $csrf->getHiddenField() ?>
 	<?= $content ?>
 </form>
-<script>
+<script nonce="<?= rex_response::getNonce() ?>">
 window.NavBuilderInit = <?= json_encode($init, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '{}' ?>;
 </script>

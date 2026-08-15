@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FriendsOfRedaxo\NavBuilder;
 
+use JsonException;
 use rex;
 use rex_article;
 use rex_clang;
@@ -47,6 +48,9 @@ final class Navigation
 
 	/** Global hard cap for nesting — a per-navigation `maxDepth` can only go below it. */
 	public const MAX_DEPTH = 10;
+
+	/** Encoded-size guard for save() — far below the MEDIUMTEXT column limit, far above any sane navigation. */
+	public const MAX_BYTES = 1000000;
 
 	/** Legacy type name => current type name. */
 	private const TYPE_ALIASES = ['intern' => 'article', 'extern' => 'link', 'group' => 'text'];
@@ -98,19 +102,6 @@ final class Navigation
 		));
 	}
 
-	/** @return list<self> */
-	public static function all(): array
-	{
-		$navigations = [];
-
-		foreach (rex_sql::factory()->getArray('SELECT `id`, `name`, `structure` FROM ' . self::table() . ' ORDER BY `name` ASC') as $row) {
-			$raw = (string) ($row['structure'] ?? '');
-			$navigations[] = new self((int) $row['id'], (string) $row['name'], self::decode($raw), self::decodeMaxDepth($raw));
-		}
-
-		return $navigations;
-	}
-
 	/**
 	 * Validates and stores a navigation.
 	 *
@@ -156,13 +147,29 @@ final class Navigation
 			throw new rex_functional_exception(rex_i18n::rawMsg('navbuilder_error_max_depth', (string) $limit, (string) $depth));
 		}
 
+		$encoded = self::encode($items, $maxDepth);
+
+		if (strlen($encoded) > self::MAX_BYTES) {
+			throw new rex_functional_exception(rex_i18n::rawMsg(
+				'navbuilder_error_structure_too_large',
+				(string) strlen($encoded),
+				(string) self::MAX_BYTES,
+			));
+		}
+
 		$sql = rex_sql::factory();
 		$sql->setTable(self::table());
 		$sql->setValue('name', $name);
-		$sql->setValue('structure', self::encode($items, $maxDepth));
+		$sql->setValue('structure', $encoded);
 		$sql->setDateTimeValue('updated_at', time());
 
 		if (null !== $id && $id > 0) {
+			// An update of a row deleted in the meantime would otherwise report success while
+			// storing nothing (affected-rows can't tell "missing" from "unchanged").
+			if (null === self::get($id)) {
+				throw new rex_functional_exception(rex_i18n::msg('navbuilder_error_not_found'));
+			}
+
 			$sql->setWhere(['id' => $id]);
 			$sql->update();
 
@@ -218,12 +225,13 @@ final class Navigation
 	 * `structure_legacy` is only written for a real v1 row that has no backup yet, so a repeated
 	 * run cannot overwrite the original.
 	 *
-	 * @return array{migrated: int, skipped: int}
+	 * @return array{migrated: int, skipped: int, dropped: int}
 	 */
 	public static function migrateAll(): array
 	{
 		$migrated = 0;
 		$skipped = 0;
+		$dropped = 0;
 
 		foreach (rex_sql::factory()->getArray('SELECT `id`, `name`, `structure`, `structure_legacy` FROM ' . self::table()) as $row) {
 			$raw = (string) ($row['structure'] ?? '');
@@ -238,10 +246,17 @@ final class Navigation
 				continue;
 			}
 
+			// The migration is deliberately lossy (unsupported schemes, invalid references, …) but
+			// must never be *silently* lossy — the caller reports the count, the log has details,
+			// and `structure_legacy` keeps the original.
+			$items = self::decode($raw);
+			$before = self::countNodes(is_array($decoded) ? ($decoded['items'] ?? $decoded) : []);
+			$dropped += max(0, $before - self::countNodes($items));
+
 			$sql = rex_sql::factory();
 			$sql->setTable(self::table());
 			$sql->setWhere(['id' => (int) $row['id']]);
-			$sql->setValue('structure', self::encode(self::decode($raw), self::decodeMaxDepth($raw)));
+			$sql->setValue('structure', self::encode($items, self::decodeMaxDepth($raw)));
 
 			// The backup is the pre-v2 original — a v2→v2 type normalization must not claim that slot.
 			if (!$isV2 && '' === (string) ($row['structure_legacy'] ?? '')) {
@@ -252,7 +267,25 @@ final class Navigation
 			++$migrated;
 		}
 
-		return ['migrated' => $migrated, 'skipped' => $skipped];
+		return ['migrated' => $migrated, 'skipped' => $skipped, 'dropped' => $dropped];
+	}
+
+	/** Counts every (array-shaped) node in a raw item tree, children included. */
+	private static function countNodes(mixed $raw): int
+	{
+		if (!is_array($raw)) {
+			return 0;
+		}
+
+		$count = 0;
+
+		foreach ($raw as $item) {
+			if (is_array($item)) {
+				$count += 1 + self::countNodes($item['children'] ?? []);
+			}
+		}
+
+		return $count;
 	}
 
 	/**
@@ -269,9 +302,19 @@ final class Navigation
 	 */
 	public static function decode(string $json, bool $strict = false): array
 	{
-		$data = json_decode(trim($json), true);
+		try {
+			$data = json_decode(trim($json), true, 512, JSON_THROW_ON_ERROR);
+		} catch (JsonException) {
+			$data = null;
+		}
 
 		if (!is_array($data)) {
+			// A save must never turn unparseable input into an empty navigation — a truncated or
+			// corrupted POST would silently wipe the stored tree and still report success.
+			if ($strict) {
+				throw new rex_functional_exception(rex_i18n::msg('navbuilder_error_structure_invalid'));
+			}
+
 			return [];
 		}
 
@@ -357,7 +400,7 @@ final class Navigation
 	 */
 	public static function normalizeItems(mixed $raw, bool $strict = false): array
 	{
-		$state = ['count' => 0, 'ids' => [], 'strict' => $strict];
+		$state = ['count' => 0, 'ids' => [], 'strict' => $strict, 'overflow' => false];
 
 		return self::mapItems($raw, 0, $state);
 	}
@@ -416,7 +459,7 @@ final class Navigation
 	}
 
 	/**
-	 * @param array{count: int, ids: array<string, true>, strict: bool} $state
+	 * @param array{count: int, ids: array<string, true>, strict: bool, overflow: bool} $state
 	 *
 	 * @return list<array<string, mixed>>
 	 */
@@ -438,7 +481,17 @@ final class Navigation
 		$items = [];
 
 		foreach ($raw as $item) {
-			if (!is_array($item) || $state['count'] >= self::MAX_ITEMS) {
+			if ($state['count'] >= self::MAX_ITEMS) {
+				// Logged once — this was the one drop path that left no trace at all.
+				if (!$state['overflow']) {
+					$state['overflow'] = true;
+					rex_logger::factory()->warning('navbuilder: dropped navigation items beyond the ' . self::MAX_ITEMS . '-item limit');
+				}
+
+				continue;
+			}
+
+			if (!is_array($item)) {
 				continue;
 			}
 
@@ -602,7 +655,7 @@ final class Navigation
 	}
 
 	/**
-	 * @param array{count: int, ids: array<string, true>, strict: bool} $state
+	 * @param array{count: int, ids: array<string, true>, strict: bool, overflow: bool} $state
 	 */
 	private static function itemId(mixed $id, array &$state): string
 	{

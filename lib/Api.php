@@ -39,7 +39,9 @@ final class Api extends rex_api_function
 
 	public function execute(): rex_api_result
 	{
-		if (!rex::isBackend() || !rex::getUser()) {
+		// CSRF is not authorization — the endpoint exposes article names (incl. offline ones),
+		// so it requires the same permission as the backend page it serves.
+		if (!rex::isBackend() || !rex::getUser()?->hasPerm('navbuilder[]')) {
 			self::sendJson(['error' => 'access_denied'], rex_response::HTTP_FORBIDDEN);
 		}
 

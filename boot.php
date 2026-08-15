@@ -20,7 +20,8 @@ if (rex::isBackend()) {
 
 		$addon = rex_addon::get('navbuilder');
 
-		foreach (['vue.global.prod.js', 'navbuilder.js'] as $file) {
+		// Order matters: navbuilder.js destructures window.NavBuilderCore at load time.
+		foreach (['vue.global.prod.js', 'navbuilder-core.js', 'navbuilder.js'] as $file) {
 			if (is_file($path = $addon->getPath('assets/' . $file))) {
 				rex_view::addJsFile($addon->getAssetsUrl($file) . '?v=' . $addon->getVersion() . '.' . filemtime($path));
 			}
