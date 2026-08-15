@@ -1047,7 +1047,7 @@
 										:aria-selected="entry.profileId === item.profileId && entry.dataId === item.dataId ? 'true' : 'false'"
 										@mousedown.prevent="chooseUrl(entry)" @mouseenter="uActive = i">
 										<span class="nb-result-name">{{ entry.name }}</span>
-										<span class="nb-badge">{{ entry.profile }}</span>
+										<span class="nb-badge nb-badge-muted">{{ entry.profile }}</span>
 										<span class="nb-result-path">{{ entry.url }}</span>
 									</li>
 									<li v-if="!uResults.length" class="nb-note">{{ t.url_no_results }}</li>

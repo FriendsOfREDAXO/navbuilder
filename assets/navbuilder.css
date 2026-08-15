@@ -187,6 +187,10 @@
 	background: #d9534f;
 }
 
+.nb-badge-muted {
+	background: #777;
+}
+
 /* ── Drag & drop indicators ─────────────────────────────────────────────────────────────── */
 
 /* before/after = new sibling at that edge, inside = nest into the hovered item. */
