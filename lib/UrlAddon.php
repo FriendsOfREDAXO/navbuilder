@@ -85,8 +85,19 @@ final class UrlAddon
 		}
 
 		if ('' !== $q) {
-			$where .= ' AND (u.`url` LIKE :q OR u.`seo` LIKE :q)';
-			$params['q'] = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $q) . '%';
+			// The `seo` blob may store non-ASCII either raw or json-escaped ("ä" vs "\u00e4",
+			// depending on the writer's json_encode flags) — so the title match tries both
+			// forms. An ASCII query collapses to a single needle.
+			$needles = array_unique([$q, trim((string) json_encode($q, JSON_UNESCAPED_SLASHES), '"')]);
+			$likes = [];
+
+			foreach (array_values($needles) as $i => $needle) {
+				$likes[] = 'u.`url` LIKE :q' . $i;
+				$likes[] = 'u.`seo` LIKE :q' . $i;
+				$params['q' . $i] = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $needle) . '%';
+			}
+
+			$where .= ' AND (' . implode(' OR ', $likes) . ')';
 		}
 
 		$rows = rex_sql::factory()->getArray(
@@ -172,8 +183,20 @@ final class UrlAddon
 
 		return [
 			'path' => $path,
-			'absolute' => isset($parts['host']) ? $stored : rtrim(rex::getServer(), '/') . $path,
+			// url 2.x stores scheme-relative URLs ("//host/…"). Browsers accept those, XML
+			// consumers of the `absolute` option (sitemaps, feeds) do not — so a host without
+			// a scheme borrows the configured server's, and a bare path gets the whole server.
+			'absolute' => isset($parts['host'])
+				? (isset($parts['scheme']) ? $stored : self::scheme() . ':' . $stored)
+				: rtrim(rex::getServer(), '/') . $path,
 			'label' => is_array($seo) ? trim((string) ($seo['title'] ?? '')) : '',
 		];
+	}
+
+	private static function scheme(): string
+	{
+		$scheme = parse_url(rex::getServer(), PHP_URL_SCHEME);
+
+		return is_string($scheme) && '' !== $scheme ? $scheme : 'https';
 	}
 }
