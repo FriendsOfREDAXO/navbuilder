@@ -20,7 +20,7 @@
 	const { uid, isSafeUrl, detectKind, splitLink, buildLink, clean } = window.NavBuilderCore;
 
 	/** Item fields the editor may change — used for the edit-form snapshot (cancel = revert). */
-	const EDITABLE = ['type', 'articleId', 'clang', 'label', 'url', 'target', 'file', 'text', 'hiddenIn', '_label', '_online', '_url', '_exists'];
+	const EDITABLE = ['type', 'articleId', 'clang', 'label', 'url', 'target', 'file', 'text', 'hiddenIn', 'profileId', 'dataId', '_label', '_online', '_url', '_exists', '_profile'];
 
 	const SEARCH_DELAY = 250;
 
@@ -52,6 +52,8 @@
 		const linkmap = init.linkmap || {};
 		const mediapool = init.mediapool || {};
 		const clangs = Array.isArray(init.clangs) ? init.clangs : [];
+		const features = init.features || {};
+		const urlProfiles = Array.isArray(init.urlProfiles) ? init.urlProfiles : [];
 		const output = document.getElementById(init.outputId);
 		const form = document.getElementById(init.formId) || (output ? output.closest('form') : null);
 		const items = reactive(normalize((init.structure || {}).items));
@@ -94,6 +96,10 @@
 			} else if ('media' === type) {
 				item.file = '';
 				item.target = '_self';
+			} else if ('url' === type) {
+				item.profileId = null;
+				item.dataId = null;
+				item.target = '_self';
 			} else if ('text' === type) {
 				item.text = '';
 			}
@@ -118,6 +124,10 @@
 
 			if ('media' === item.type) {
 				return '' === String(item.file || '').trim();
+			}
+
+			if ('url' === item.type) {
+				return !(parseInt(item.profileId, 10) > 0 && parseInt(item.dataId, 10) > 0);
 			}
 
 			return 'link' === item.type && '' === String(item.url || '').trim();
@@ -193,6 +203,24 @@
 			return fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
 				.then((response) => response.json())
 				.then((data) => remember(Array.isArray(data.items) ? data.items : []))
+				.catch(() => []);
+		}
+
+		/** Seed suggestions for the url picker — same caveat as `seed()`: first 30, never complete. */
+		function urlSeed() {
+			return Array.isArray(init.urls) ? init.urls.slice() : [];
+		}
+
+		function fetchUrls(q, profile) {
+			const url = api.urlAutocompleteUrl
+				+ (api.urlAutocompleteUrl.indexOf('?') < 0 ? '?' : '&')
+				+ 'q=' + encodeURIComponent(q)
+				+ '&profile=' + encodeURIComponent(profile || '')
+				+ '&' + encodeURIComponent(api.csrfField || '_csrf_token') + '=' + encodeURIComponent(api.urlCsrfToken || '');
+
+			return fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+				.then((response) => response.json())
+				.then((data) => (Array.isArray(data.items) ? data.items : []))
 				.catch(() => []);
 		}
 
@@ -288,6 +316,18 @@
 				const active = ref(-1);
 				const listId = 'nb-lb-' + item.id;
 
+				// Url-dataset combobox — the article combobox's twin with its own state, because
+				// the two are visible in different modes but must not share half-typed queries.
+				const uQuery = ref('');
+				const uResults = ref(urlSeed());
+				const uProfile = ref('');
+				const uOpen = ref(false);
+				const uActive = ref(-1);
+				const uListId = 'nb-ulb-' + item.id;
+				const urlItemError = ref('');
+				let uTimer = 0;
+				let uLastRequest = 0;
+
 				// Link form: one field holding the bare value, kept in sync with `item.url`
 				// (the only stored field) and with the live kind indicator next to it.
 				const address = ref(splitLink(item.url));
@@ -309,6 +349,7 @@
 					urlError.value = '';
 					articleError.value = '';
 					mediaError.value = '';
+					urlItemError.value = '';
 
 					// `address` only ever mirrors the stored url. Reseeding it on every switch keeps
 					// the field showing what an apply would really save — a value typed during an
@@ -323,8 +364,12 @@
 				let snapshot = null;
 
 				const broken = computed(() => (('article' === item.type && parseInt(item.articleId, 10) > 0)
-					|| ('media' === item.type && '' !== String(item.file || ''))) && false === item._exists);
+					|| ('media' === item.type && '' !== String(item.file || ''))
+					|| ('url' === item.type && parseInt(item.dataId, 10) > 0)) && false === item._exists);
 				const offline = computed(() => 'article' === item.type && !broken.value && false === item._online);
+
+				// An existing url item survives the addon's removal untouched — flagged, not lost.
+				const urlUnavailable = computed(() => 'url' === item.type && !features.url);
 
 				const title = computed(() => {
 					const label = String(item.label || '').trim();
@@ -350,10 +395,14 @@
 						return plain ? (plain.length > 40 ? plain.slice(0, 40) + '…' : plain) : '—';
 					}
 
+					if ('url' === item.type) {
+						return item._label || (parseInt(item.dataId, 10) > 0 ? '#' + item.dataId : t.choose_url);
+					}
+
 					return item.url || t[item.type] || item.type;
 				});
 
-				const hint = computed(() => ('article' === item.type || 'media' === item.type ? item._url || '' : item.url || ''));
+				const hint = computed(() => ('article' === item.type || 'media' === item.type || 'url' === item.type ? item._url || '' : item.url || ''));
 
 				// ── Per-language visibility ───────────────────────────────────────────────
 				const visibleIn = (id) => (item.hiddenIn || []).indexOf(id) < 0;
@@ -479,6 +528,7 @@
 					urlError.value = '';
 					articleError.value = '';
 					mediaError.value = '';
+					urlItemError.value = '';
 					item._edit = true;
 					openForms.set(item.id, () => close(false));
 				}
@@ -518,6 +568,12 @@
 
 							return false;
 						}
+
+						if ('url' === mode.value && !(parseInt(item.dataId, 10) > 0)) {
+							urlItemError.value = t.url_item_required;
+
+							return false;
+						}
 					}
 
 					if (revert && snapshot) {
@@ -533,8 +589,11 @@
 						if ('article' !== mode.value) {
 							item.articleId = null;
 							item.clang = null;
-							item._label = null;
 							item._online = null;
+						}
+
+						if ('article' !== mode.value && 'url' !== mode.value) {
+							item._label = null;
 						}
 
 						if ('link' !== mode.value) {
@@ -542,7 +601,7 @@
 						}
 
 						// Both link and media open a real URL — a target survives converting between them.
-						if ('link' !== mode.value && 'media' !== mode.value) {
+						if ('link' !== mode.value && 'media' !== mode.value && 'url' !== mode.value) {
 							item.target = null;
 						}
 
@@ -555,8 +614,14 @@
 							item.text = null;
 						}
 
-						// `_exists`/`_url` are shared by the two types that resolve server-side.
-						if ('article' !== mode.value && 'media' !== mode.value) {
+						if ('url' !== mode.value) {
+							item.profileId = null;
+							item.dataId = null;
+							item._profile = null;
+						}
+
+						// `_exists`/`_url` are shared by the types that resolve server-side.
+						if ('article' !== mode.value && 'media' !== mode.value && 'url' !== mode.value) {
 							item._exists = null;
 							item._url = null;
 						}
@@ -565,6 +630,7 @@
 					urlError.value = '';
 					articleError.value = '';
 					mediaError.value = '';
+					urlItemError.value = '';
 					snapshot = null;
 					item._edit = false;
 					openForms.delete(item.id);
@@ -638,6 +704,72 @@
 					results.value = seed();
 					closeList();
 				}
+
+				function uCloseList() {
+					uOpen.value = false;
+					uActive.value = -1;
+					window.clearTimeout(uTimer);
+				}
+
+				function uMove(step) {
+					if (!uOpen.value) {
+						uOpen.value = true;
+
+						return;
+					}
+
+					const count = uResults.value.length;
+
+					uActive.value = count ? (uActive.value + step + count) % count : -1;
+				}
+
+				function uPickActive() {
+					const at = uActive.value < 0 && '' !== uQuery.value.trim() ? 0 : uActive.value;
+
+					if (uOpen.value && uResults.value[at]) {
+						chooseUrl(uResults.value[at]);
+					}
+				}
+
+				function uSearch() {
+					window.clearTimeout(uTimer);
+					uTimer = window.setTimeout(() => {
+						const request = ++uLastRequest;
+
+						fetchUrls(uQuery.value, uProfile.value).then((found) => {
+							if (request === uLastRequest) {
+								uResults.value = found;
+								uActive.value = -1;
+							}
+						});
+					}, SEARCH_DELAY);
+				}
+
+				function uOnQuery() {
+					uOpen.value = true;
+					uActive.value = -1;
+					uSearch();
+				}
+
+				function chooseUrl(entry) {
+					item.profileId = entry.profileId;
+					item.dataId = entry.dataId;
+					item._exists = true;
+					item._label = entry.name;
+					item._url = entry.url;
+					item._profile = entry.profile;
+					urlItemError.value = '';
+					uQuery.value = '';
+					uResults.value = urlSeed();
+					uCloseList();
+				}
+
+				// A changed filter re-runs the search immediately — with the list open, an
+				// unchanged result set would look like the filter did nothing.
+				watch(uProfile, () => {
+					uResults.value = [];
+					uSearch();
+				});
 
 				function pickViaLinkmap() {
 					closeList();
@@ -746,6 +878,9 @@
 					remove: remove, duplicate: duplicate, addBelow: addBelow, toggleEdit: toggleEdit, close: close,
 					onQuery: onQuery, choose: choose, pickViaLinkmap: pickViaLinkmap, pickViaMediapool: pickViaMediapool,
 					onDragStart: onDragStart, onDragOver: onDragOver, onDrop: onDrop, onDragEnd: resetDnd,
+					features: features, urlProfiles: urlProfiles, urlItemError: urlItemError, urlUnavailable: urlUnavailable,
+					uQuery: uQuery, uResults: uResults, uProfile: uProfile, uOpen: uOpen, uActive: uActive, uListId: uListId,
+					uCloseList: uCloseList, uMove: uMove, uPickActive: uPickActive, uOnQuery: uOnQuery, chooseUrl: chooseUrl,
 				};
 			},
 			template: `
@@ -757,6 +892,7 @@
 			<span class="nb-kind">{{ t[item.type] }}</span>
 			<span class="nb-title" :class="{ 'nb-title-broken': broken }">{{ title }}</span>
 			<span v-if="broken" class="nb-badge nb-badge-danger">{{ t.deleted }}</span>
+			<span v-else-if="urlUnavailable" class="nb-badge nb-badge-warning">{{ t.url_addon_missing }}</span>
 			<span v-else-if="offline" class="nb-badge nb-badge-warning">{{ t.offline }}</span>
 			<span v-if="hiddenHint" class="nb-hidden" :title="t.hidden_in"><i class="rex-icon fa-eye-slash" aria-hidden="true"></i> {{ hiddenHint }}</span>
 			<code v-if="hint" class="nb-hint">{{ hint }}</code>
@@ -785,6 +921,8 @@
 						:aria-pressed="mode === 'link' ? 'true' : 'false'" @click="mode = 'link'"><i class="rex-icon fa-link" aria-hidden="true"></i> {{ t.link }}</button>
 					<button type="button" class="btn btn-sm btn-default" :class="{ active: mode === 'media' }"
 						:aria-pressed="mode === 'media' ? 'true' : 'false'" @click="mode = 'media'"><i class="rex-icon rex-icon-media" aria-hidden="true"></i> {{ t.media }}</button>
+					<button v-if="features.url || 'url' === item.type" type="button" class="btn btn-sm btn-default" :class="{ active: mode === 'url' }"
+						:aria-pressed="mode === 'url' ? 'true' : 'false'" @click="mode = 'url'"><i class="rex-icon fa-database" aria-hidden="true"></i> {{ t.url }}</button>
 					<button type="button" class="btn btn-sm btn-default" :class="{ active: mode === 'text' }"
 						:aria-pressed="mode === 'text' ? 'true' : 'false'" @click="mode = 'text'"><i class="rex-icon fa-font" aria-hidden="true"></i> {{ t.text }}</button>
 				</div>
@@ -881,6 +1019,53 @@
 				</div>
 			</template>
 
+			<template v-else-if="'url' === mode">
+				<p v-if="!features.url" class="nb-note">{{ t.url_addon_missing }}</p>
+				<template v-else>
+					<div v-if="urlProfiles.length > 1" class="form-group">
+						<label class="control-label" :for="'nb-up-' + item.id">{{ t.url_profile }}</label>
+						<select class="form-control" :id="'nb-up-' + item.id" v-model="uProfile">
+							<option value="">{{ t.url_all_profiles }}</option>
+							<option v-for="profile in urlProfiles" :key="profile.id" :value="profile.namespace">{{ profile.namespace }}</option>
+						</select>
+					</div>
+					<div class="nb-grid">
+						<!-- Same combobox trade-offs as the article picker above: blur closes, options
+							survive it via @mousedown.prevent. -->
+						<div class="form-group nb-combo" :class="{ 'has-error': urlItemError }">
+							<label class="control-label" :for="'nb-uq-' + item.id">{{ t.search }}</label>
+							<input class="form-control" type="search" :id="'nb-uq-' + item.id" v-model="uQuery" autocomplete="off" :placeholder="t.search_placeholder"
+								role="combobox" aria-autocomplete="list" :aria-controls="uListId" :aria-expanded="uOpen ? 'true' : 'false'"
+								:aria-activedescendant="uActive >= 0 ? uListId + '-' + uActive : null"
+								@input="uOnQuery" @focus="uOpen = true" @blur="uCloseList"
+								@keydown.down.prevent="uMove(1)" @keydown.up.prevent="uMove(-1)" @keydown.enter.prevent="uPickActive" @keydown.esc="uCloseList">
+							<div v-if="uOpen" class="nb-listbox">
+								<p v-if="!uQuery" class="nb-listbox-head">{{ t.suggestions }}</p>
+								<ul class="nb-results" role="listbox" :id="uListId" :aria-label="t.search">
+									<li v-for="(entry, i) in uResults" :key="entry.profileId + '-' + entry.dataId" :id="uListId + '-' + i" role="option"
+										class="nb-result" :class="{ 'nb-result-current': entry.profileId === item.profileId && entry.dataId === item.dataId, 'nb-result-active': i === uActive }"
+										:aria-selected="entry.profileId === item.profileId && entry.dataId === item.dataId ? 'true' : 'false'"
+										@mousedown.prevent="chooseUrl(entry)" @mouseenter="uActive = i">
+										<span class="nb-result-name">{{ entry.name }}</span>
+										<span class="nb-badge">{{ entry.profile }}</span>
+										<span class="nb-result-path">{{ entry.url }}</span>
+									</li>
+									<li v-if="!uResults.length" class="nb-note">{{ t.no_results }}</li>
+								</ul>
+							</div>
+							<span v-if="urlItemError" class="help-block">{{ urlItemError }}</span>
+						</div>
+						<div class="form-group">
+							<label class="control-label" :for="'nb-uo-' + item.id">{{ t.label_override }}</label>
+							<input class="form-control" type="text" :id="'nb-uo-' + item.id" v-model="item.label" :placeholder="item._label">
+						</div>
+					</div>
+					<div class="checkbox">
+						<label><input type="checkbox" :checked="item.target === '_blank'" @change="item.target = $event.target.checked ? '_blank' : '_self'"> {{ t.new_window }}</label>
+					</div>
+				</template>
+			</template>
+
 			<template v-else>
 				<div class="form-group">
 					<label class="control-label" :for="'nb-g-' + item.id">{{ t.label }}</label>
@@ -925,6 +1110,7 @@
 			<button type="button" class="btn btn-xs btn-default" @click="addBelow('article')"><i class="rex-icon rex-icon-article" aria-hidden="true"></i> {{ t.add_article }}</button>
 			<button type="button" class="btn btn-xs btn-default" @click="addBelow('link')"><i class="rex-icon fa-link" aria-hidden="true"></i> {{ t.add_link }}</button>
 			<button type="button" class="btn btn-xs btn-default" @click="addBelow('media')"><i class="rex-icon rex-icon-media" aria-hidden="true"></i> {{ t.add_media }}</button>
+			<button v-if="features.url" type="button" class="btn btn-xs btn-default" @click="addBelow('url')"><i class="rex-icon fa-database" aria-hidden="true"></i> {{ t.add_url }}</button>
 			<button type="button" class="btn btn-xs btn-default" @click="addBelow('text')"><i class="rex-icon fa-font" aria-hidden="true"></i> {{ t.add_text }}</button>
 		</div>
 	</li>`,
@@ -972,7 +1158,7 @@
 			setup() {
 				return {
 					t: t, items: items, dnd: dnd,
-					settings: settings, isAdmin: !!init.isAdmin, maxDepthLimit: HARD_DEPTH,
+					settings: settings, isAdmin: !!init.isAdmin, maxDepthLimit: HARD_DEPTH, features: features,
 					add: add, onRootDragOver: onRootDragOver, onRootDrop: onRootDrop, onDragEnd: resetDnd,
 				};
 			},
@@ -990,6 +1176,7 @@
 			<button type="button" class="btn btn-default" @click="add('article')"><i class="rex-icon rex-icon-article" aria-hidden="true"></i> {{ t.add_article }}</button>
 			<button type="button" class="btn btn-default" @click="add('link')"><i class="rex-icon fa-link" aria-hidden="true"></i> {{ t.add_link }}</button>
 			<button type="button" class="btn btn-default" @click="add('media')"><i class="rex-icon rex-icon-media" aria-hidden="true"></i> {{ t.add_media }}</button>
+			<button v-if="features.url" type="button" class="btn btn-default" @click="add('url')"><i class="rex-icon fa-database" aria-hidden="true"></i> {{ t.add_url }}</button>
 			<button type="button" class="btn btn-default" @click="add('text')"><i class="rex-icon fa-font" aria-hidden="true"></i> {{ t.add_text }}</button>
 		</div>
 
