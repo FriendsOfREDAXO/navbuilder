@@ -86,7 +86,10 @@ navbuilder_js_url = URL
 navbuilder_js_url_addon_missing = URL-Addon nicht verfügbar
 navbuilder_js_url_all_profiles = Alle Profile
 navbuilder_js_url_item_required = Bitte einen Datensatz wählen.
+navbuilder_js_url_label_override = Abweichende Beschriftung (leer = Datensatz-Titel)
+navbuilder_js_url_no_results = Keine Datensätze gefunden
 navbuilder_js_url_profile = Profil
 navbuilder_js_url_required = Bitte ein Ziel angeben.
 navbuilder_js_url_scheme = Diese Adresse verwendet ein nicht erlaubtes Protokoll. Erlaubt sind http, https, mailto, tel sowie relative Links.
+navbuilder_js_url_search_placeholder = Datensatz suchen …
 navbuilder_js_visible_in = Sichtbar in

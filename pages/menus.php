@@ -266,8 +266,8 @@ $jsKeys = [
 	'link_value', 'max_depth', 'max_depth_hint', 'media', 'media_required', 'move_down', 'move_in',
 	'move_out', 'move_up', 'new_window', 'no_results', 'offline',
 	'remove', 'search', 'search_placeholder', 'suggestions', 'text', 'text_content', 'text_discarded',
-	'url', 'url_addon_missing', 'url_all_profiles', 'url_item_required', 'url_profile', 'url_required',
-	'url_scheme', 'visible_in',
+	'url', 'url_addon_missing', 'url_all_profiles', 'url_item_required', 'url_label_override', 'url_no_results',
+	'url_profile', 'url_required', 'url_scheme', 'url_search_placeholder', 'visible_in',
 ];
 
 foreach ($jsKeys as $key) {

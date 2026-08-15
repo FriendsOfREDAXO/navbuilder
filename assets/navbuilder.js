@@ -1034,7 +1034,7 @@
 							survive it via @mousedown.prevent. -->
 						<div class="form-group nb-combo" :class="{ 'has-error': urlItemError }">
 							<label class="control-label" :for="'nb-uq-' + item.id">{{ t.search }}</label>
-							<input class="form-control" type="search" :id="'nb-uq-' + item.id" v-model="uQuery" autocomplete="off" :placeholder="t.search_placeholder"
+							<input class="form-control" type="search" :id="'nb-uq-' + item.id" v-model="uQuery" autocomplete="off" :placeholder="t.url_search_placeholder"
 								role="combobox" aria-autocomplete="list" :aria-controls="uListId" :aria-expanded="uOpen ? 'true' : 'false'"
 								:aria-activedescendant="uActive >= 0 ? uListId + '-' + uActive : null"
 								@input="uOnQuery" @focus="uOpen = true" @blur="uCloseList"
@@ -1050,13 +1050,13 @@
 										<span class="nb-badge">{{ entry.profile }}</span>
 										<span class="nb-result-path">{{ entry.url }}</span>
 									</li>
-									<li v-if="!uResults.length" class="nb-note">{{ t.no_results }}</li>
+									<li v-if="!uResults.length" class="nb-note">{{ t.url_no_results }}</li>
 								</ul>
 							</div>
 							<span v-if="urlItemError" class="help-block">{{ urlItemError }}</span>
 						</div>
 						<div class="form-group">
-							<label class="control-label" :for="'nb-uo-' + item.id">{{ t.label_override }}</label>
+							<label class="control-label" :for="'nb-uo-' + item.id">{{ t.url_label_override }}</label>
 							<input class="form-control" type="text" :id="'nb-uo-' + item.id" v-model="item.label" :placeholder="item._label">
 						</div>
 					</div>

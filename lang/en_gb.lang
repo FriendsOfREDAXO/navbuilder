@@ -86,7 +86,10 @@ navbuilder_js_url = URL
 navbuilder_js_url_addon_missing = URL addon not available
 navbuilder_js_url_all_profiles = All profiles
 navbuilder_js_url_item_required = Please choose a dataset.
+navbuilder_js_url_label_override = Custom label (empty = dataset title)
+navbuilder_js_url_no_results = No datasets found
 navbuilder_js_url_profile = Profile
 navbuilder_js_url_required = Please provide a target.
 navbuilder_js_url_scheme = This address uses a scheme that is not allowed. Permitted are http, https, mailto, tel and relative links.
+navbuilder_js_url_search_placeholder = Search datasets …
 navbuilder_js_visible_in = Visible in
