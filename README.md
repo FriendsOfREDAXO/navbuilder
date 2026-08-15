@@ -19,6 +19,9 @@ ausgeben.
 - REDAXO `^5.18`
 - PHP `>=8.1`
 - Addon `structure` `^2.9`
+- Optional: Addon [`url`](https://github.com/FriendsOfREDAXO/url) — nur für den Item-Typ `url`.
+  Bewusst keine Abhängigkeit: fehlt das Addon, fehlt schlicht dieser Typ, alles andere
+  funktioniert unverändert.
 
 Kein `yform`, kein `phpmailer` (beides in 2.0 entfernt — siehe Changelog).
 
@@ -66,6 +69,8 @@ Migration unverändert.
       "target": "_blank", "children": [] },
     { "id": "b1c2d3e4", "type": "media", "file": "prospekt.pdf", "label": "Prospekt",
       "target": "_blank", "children": [] },
+    { "id": "d3e4f5a6", "type": "url", "profileId": 3, "dataId": 17,
+      "target": "_self", "children": [] },
     { "id": "c9d0e1f2", "type": "text", "label": "Service", "text": "<p>…</p>",
       "children": [] }
   ]
@@ -81,6 +86,11 @@ Rendern über `rex_media::get()` aufgelöst; ohne `label` erscheint der Dateinam
 Datei verschwindet aus der Frontend-Ausgabe und wird im Backend markiert — genau wie ein
 gelöschter Artikel.
 
+`url`-Einträge zeigen auf eine vom [url-Addon](https://github.com/FriendsOfREDAXO/url) generierte
+Datensatz-URL und setzen dieses Addon voraus (siehe unten). Gespeichert werden nur `profileId` und
+`dataId` — Adresse und Name werden beim Rendern aufgelöst (Name: der SEO-Titel des Generators,
+ersatzweise der Pfad). Wie überall ist ein `label` eine redaktionelle Überschreibung, nie ein Cache.
+
 `text`-Einträge sind rein strukturell (früher `group`, siehe Changelog). Neben `label` können sie
 ein optionales Feld `text` mit **HTML** tragen. Beide sind unabhängig voneinander: `text` ist immer
 der Inhalt, nie ein Ersatz für die Beschriftung — ein Eintrag ohne `label` behält ein leeres `label`
@@ -89,6 +99,29 @@ automatisch auf `text` abgebildet, gespeicherte Daten funktionieren also unverä
 
 E-Mail- und Telefon-Einträge sind normale `link`-Einträge (`mailto:…` / `tel:…`) — die Erkennung
 im Editor baut nur die URL zusammen und erweitert das Datenmodell nicht.
+
+### Datensatz-URLs (url-Addon)
+
+Das [url-Addon](https://github.com/FriendsOfREDAXO/url) ist ein **optionaler Nachbar, keine
+Voraussetzung**: Der Typ `url` erscheint im Backend nur, wenn das Addon installiert ist.
+
+Aufgelöst wird ausschließlich die kanonische Datensatz-URL. Zeilen, die das url-Addon als
+angehängte Unter-URL eines Datensatzes führt (`is_user_path`/`is_structure`, z. B. eine
+Galerie-Seite unter einer Detailseite), tauchen weder im Picker noch in der Ausgabe auf.
+
+Die Auflösung ist **sprachabhängig**: Gibt es für die gerenderte Sprache keine generierte URL —
+weil das Profil diese Sprache nicht generiert oder der Datensatz gelöscht wurde — wird der Eintrag
+samt allen Unterpunkten übersprungen, genau wie bei einem gelöschten Artikel. `active` gilt, wenn
+der Pfad des Requests der generierten URL entspricht (ein abschließender `/` spielt keine Rolle).
+
+Im Backend durchsucht der Picker alle generierten URLs der im Backend gewählten Sprache — nach
+Name und Adresse; jeder Treffer zeigt Name, Profil-Namespace als Badge und den Pfad. Gibt es mehr
+als ein Profil, steht darüber ein Profil-Filter.
+
+Wird das url-Addon später deinstalliert, bleiben gespeicherte `url`-Einträge erhalten: Im Backend
+sind sie mit dem Hinweis „URL-Addon nicht verfügbar" markiert und lassen sich weiterhin bearbeiten
+und speichern (auch in einen anderen Typ umwandeln), im Frontend werden sie übersprungen — mit
+genau einer Warnung im Systemlog pro Request, nicht einer pro Eintrag.
 
 ### Sichtbarkeit pro Sprache
 
@@ -119,7 +152,7 @@ flachgeklopft — auch nicht an der globalen 10-Ebenen-Grenze.
 
 ## Backend
 
-*Menüs → NavBuilder*: Navigation anlegen, Artikel/Links/Medien/Texte in den Baum ziehen (oder die
+*Menüs → NavBuilder*: Navigation anlegen, Artikel/Links/Medien/Datensätze/Texte in den Baum ziehen (oder die
 Buttons hoch/runter/rein/raus benutzen — vollständiger Tastaturweg, alles mit `aria-label`). Der
 **+**-Button einer Zeile fügt einen neuen Eintrag direkt unter diesem Eintrag ein (unterhalb
 seiner Unterpunkte), statt ihn ans Ende zu hängen. Gelöschte oder offline geschaltete Artikel
@@ -140,12 +173,13 @@ identisch wiederherstellen (z. B. `tel:0800-REDAXO`), dann bleibt die vollständ
 echten URLs. Die Erkennung ist eine Eingabehilfe — geprüft wird weiterhin gegen dieselbe
 Schema-Positivliste, clientseitig und verbindlich auf dem Server.
 
-**Alle vier Typen lassen sich direkt ineinander umwandeln**: das Bearbeiten-Formular hat oben
-einen Umschalter **Artikel | Link | Medium | Text**. Umgeschaltet wird nur die Anzeige — übernommen
+**Alle Typen lassen sich direkt ineinander umwandeln**: das Bearbeiten-Formular hat oben
+einen Umschalter **Artikel | Link | Medium | URL | Text** (die URL-Schaltfläche nur bei
+installiertem url-Addon — oder wenn der Eintrag bereits einer ist). Umgeschaltet wird nur die Anzeige — übernommen
 wird die Umwandlung erst mit *Übernehmen*, und dabei bleiben `id`, Beschriftung,
 Sprach-Sichtbarkeit und alle Unterpunkte erhalten, während die Felder der anderen Typen entfernt
 werden. Eine Umwandlung ohne Ziel (kein Artikel gewählt, keine Adresse getippt, keine Datei
-gewählt) wird mit einer Meldung im Formular abgelehnt, statt den Eintrag samt Unterpunkten zu
+gewählt, kein Datensatz gewählt) wird mit einer Meldung im Formular abgelehnt, statt den Eintrag samt Unterpunkten zu
 verlieren; die Umwandlung **zu** Text braucht kein Ziel, da Beschriftung und Inhalt beide optional
 sind. Wird ein Text-Eintrag mit Inhalt in einen anderen Typ umgewandelt, steht neben dem Umschalter
 ein Hinweis, dass der Inhalt beim Übernehmen entfernt wird — er ist das Einzige, was eine
@@ -153,7 +187,9 @@ Umwandlung nicht mitnehmen kann. *Abbrechen* stellt Typ **und** Inhalt wieder he
 
 **Medien** werden über den Medienpool gewählt (Button *Datei wählen*, derselbe Popup-Weg wie beim
 Core-Widget); das Dateinamensfeld ist bewusst nur lesbar. Wie bei Links gibt es "In neuem Fenster
-öffnen" (`target="_blank"`). **Text**-Einträge haben neben der
+öffnen" (`target="_blank"`). **Datensatz-URLs** werden über ein Suchfeld gewählt (Details oben
+unter *Datensatz-URLs*), ebenfalls mit "In neuem Fenster öffnen" und einem Feld für die abweichende
+Beschriftung. **Text**-Einträge haben neben der
 Beschriftung ein Textfeld für HTML — siehe die Warnung unter *Fragmente überschreiben*.
 
 Das Bearbeiten-Formular zeigt zusätzlich die interne `id` des Eintrags (klein, grau, unten
@@ -191,16 +227,18 @@ Jeder Knoten aus `tree()` (und an die Fragmente übergeben):
 | Key | Typ | Bedeutung |
 |---|---|---|
 | `id` | string | stabile interne ID, für `:key`/Diffing und Styling pro Eintrag |
-| `type` | string | `article` \| `link` \| `media` \| `text` |
-| `label` | string | Artikelname, Dateiname, Überschreibung oder Link-/Textbeschriftung |
+| `type` | string | `article` \| `link` \| `media` \| `url` \| `text` |
+| `label` | string | Artikelname, Dateiname, Datensatz-Titel, Überschreibung oder Link-/Textbeschriftung |
 | `url` | `?string` | `null` bei `text`-Einträgen |
 | `text` | `?string` | rohes HTML, nur bei `text`-Einträgen |
 | `file` | `?string` | Dateiname aus dem Medienpool, nur bei `media`-Einträgen (z. B. für eine Verzweigung nach Endung) |
 | `articleId` | `?int` | nur bei `article`-Einträgen |
 | `categoryId` | `?int` | Kategorie des Artikels (`0` auf oberster Ebene, bei einem Startartikel die Kategorie selbst); `null` bei allen anderen Typen |
-| `target` | `?string` | nur bei `link`- und `media`-Einträgen mit explizitem Ziel |
+| `profileId` | `?int` | url-Addon-Profil, nur bei `url`-Einträgen |
+| `dataId` | `?int` | Datensatz-ID im Profil, nur bei `url`-Einträgen |
+| `target` | `?string` | nur bei `link`-, `media`- und `url`-Einträgen mit explizitem Ziel |
 | `online` | bool | immer `true` — offline/gelöschte Artikel sind bereits herausgefiltert |
-| `active` | bool | zeigt genau auf den aktuellen Artikel |
+| `active` | bool | zeigt genau auf den aktuellen Artikel (bei `url`-Einträgen: auf den aufgerufenen Pfad) |
 | `activePath` | bool | aktiv, Vorfahre davon oder mit aktivem Nachfahren |
 | `depth` | int | 1-basiert |
 | `children` | list | gleiche Struktur |
@@ -259,7 +297,9 @@ $classes[] = 'nav__item--cat-' . (int) ($item['categoryId'] ?? 0);          // g
 $highlight = 22 === ($item['articleId'] ?? null);                           // ein Artikel
 ```
 
-`categoryId` ist bei `link`-, `media`- und `text`-Einträgen `null`, vor dem Vergleich also casten.
+`categoryId` ist bei `link`-, `media`-, `url`- und `text`-Einträgen `null`, vor dem Vergleich also
+casten; `url`-Einträge tragen stattdessen `profileId`/`dataId` — der stabile Anknüpfungspunkt für
+einen einzelnen Datensatz.
 
 ## Veraltete API
 
