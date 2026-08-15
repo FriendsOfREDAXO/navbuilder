@@ -94,3 +94,19 @@ test('constants stay in sync with the server', () => {
 	assert.deepEqual(TARGETS, ['_self', '_blank', '_top']);
 	assert.deepEqual(SCHEMES, ['http', 'https', 'mailto', 'tel']);
 });
+
+test('clean keeps url items, coerces ids, strips transients', () => {
+	assert.deepEqual(clean([{
+		id: 'u1', type: 'url', profileId: '3', dataId: 17, label: ' Override ', target: '_blank',
+		_label: 'x', _url: '/y/', _exists: true, _profile: 'restaurant', _edit: true, children: [],
+	}]), [{ id: 'u1', type: 'url', profileId: 3, dataId: 17, target: '_blank', children: [], label: 'Override' }]);
+});
+
+test('clean drops url items without a complete reference', () => {
+	assert.deepEqual(clean([{ id: 'u2', type: 'url', profileId: 0, dataId: 5, children: [] }]), []);
+	assert.deepEqual(clean([{ id: 'u3', type: 'url', profileId: 3, children: [] }]), []);
+});
+
+test('clean coerces an unknown url item target to _self', () => {
+	assert.equal(clean([{ id: 'u4', type: 'url', profileId: 1, dataId: 2, target: 'x', children: [] }])[0].target, '_self');
+});

@@ -185,6 +185,26 @@
 				if ('' !== label) {
 					mapped.label = label;
 				}
+			} else if ('url' === item.type) {
+				const profileId = parseInt(item.profileId, 10);
+				const dataId = parseInt(item.dataId, 10);
+
+				if (!(profileId > 0 && dataId > 0)) {
+					return;
+				}
+
+				mapped = {
+					id: item.id,
+					type: 'url',
+					profileId: profileId,
+					dataId: dataId,
+					target: TARGETS.indexOf(item.target) >= 0 ? item.target : '_self',
+					children: children,
+				};
+
+				if ('' !== label) {
+					mapped.label = label;
+				}
 			} else if ('text' === item.type) {
 				const text = String(item.text || '').trim();
 
