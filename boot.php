@@ -5,6 +5,7 @@ declare(strict_types=1);
 /** @var rex_addon $this */
 
 rex_api_function::register('navbuilder_articles', FriendsOfRedaxo\NavBuilder\Api::class);
+rex_api_function::register('navbuilder_urls', FriendsOfRedaxo\NavBuilder\UrlApi::class);
 
 if (rex::isBackend()) {
 	// package.yml declares `perm: navbuilder[]` on the page, but that alone doesn't make the
