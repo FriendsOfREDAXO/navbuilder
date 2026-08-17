@@ -104,7 +104,7 @@ if ($func == '' || $func == 'delete') {
 						</div>
 						<div class="form-group">
 							<button type="submit" name="func" value="save" class="btn btn-success" id="btnOut"><i class="glyphicon glyphicon-ok"></i> Speichern</button>
-							<button type="submit" name="func" value="delete" class="btn btn-delete"><i class="glyphicon glyphicon-delete"></i> Löschen</button>
+							<button type="submit" name="func" value="delete" class="btn btn-delete" data-confirm="Navigation wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."><i class="glyphicon glyphicon-delete"></i> Löschen</button>
 						</div>
 						<div class="form-group">
 							<textarea class="hidden" id="structure" name="config[structure]" class="form-control" cols="50" rows="10"></textarea>
