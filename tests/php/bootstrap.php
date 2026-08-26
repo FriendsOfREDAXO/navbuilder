@@ -34,9 +34,15 @@ class rex_logger
 		return new self();
 	}
 
-	public function warning(string $message): void
+	/**
+	 * @param array<string, string> $context
+	 */
+	public function warning(string $message, array $context = []): void
 	{
-		self::$messages[] = $message;
+		self::$messages[] = strtr($message, array_combine(
+			array_map(static fn (string $key): string => '{' . $key . '}', array_keys($context)),
+			$context,
+		));
 	}
 }
 

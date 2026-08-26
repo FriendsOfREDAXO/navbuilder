@@ -34,7 +34,7 @@ final class UrlApi extends rex_api_function
 	public function execute(): rex_api_result
 	{
 		// CSRF is not authorization — same permission as the backend page it serves.
-		if (!rex::isBackend() || !rex::getUser()?->hasPerm('navbuilder[]')) {
+		if (!rex::isBackend() || true !== rex::getUser()?->hasPerm('navbuilder[]')) {
 			self::sendJson(['error' => 'access_denied'], rex_response::HTTP_FORBIDDEN);
 		}
 

@@ -44,6 +44,9 @@ use rex_url;
  * Schema v1 (`{"type":"intern","text":"Startseite [1]","href":"1"}`) is understood by the same
  * normalizer, which makes {@see self::migrateAll()} idempotent. The v1/2.0-dev `group` type is
  * an alias of `text` and normalizes on decode, so stored `group` rows keep working untouched.
+ *
+ * @api projects may use this class directly, so members are public even where the addon
+ *      itself does not call them from outside
  */
 final class Navigation
 {
@@ -570,11 +573,10 @@ final class Navigation
 				$articleId = $item['articleId'] ?? $item['href'] ?? null;
 
 				if (!is_numeric($articleId) || (int) $articleId <= 0) {
-					rex_logger::factory()->warning(sprintf(
-						'navbuilder: dropped navigation item of type "%s" with non-numeric article reference "%s"',
-						$rawType,
-						is_scalar($articleId) ? (string) $articleId : gettype($articleId),
-					));
+					rex_logger::factory()->warning('navbuilder: dropped navigation item of type "{type}" with non-numeric article reference "{ref}"', [
+						'type' => $rawType,
+						'ref' => is_scalar($articleId) ? (string) $articleId : gettype($articleId),
+					]);
 					continue;
 				}
 
@@ -592,7 +594,7 @@ final class Navigation
 			} elseif ('link' === $type) {
 				// Browsers ignore control characters inside a URL, so `java\nscript:…` would run as
 				// `javascript:…`. Strip them before validating *and* before storing.
-				$url = trim(preg_replace('/[\x00-\x1f\x7f]/', '', (string) ($item['url'] ?? $item['href'] ?? '')));
+				$url = trim((string) preg_replace('/[\x00-\x1f\x7f]/', '', (string) ($item['url'] ?? $item['href'] ?? '')));
 
 				if ('' === $url) {
 					continue;
@@ -603,7 +605,7 @@ final class Navigation
 						throw new rex_functional_exception(rex_i18n::rawMsg('navbuilder_error_url_scheme', $url));
 					}
 
-					rex_logger::factory()->warning('navbuilder: dropped navigation item with unsupported url scheme "' . $url . '"');
+					rex_logger::factory()->warning('navbuilder: dropped navigation item with unsupported url scheme "{url}"', ['url' => $url]);
 					continue;
 				}
 
@@ -624,7 +626,7 @@ final class Navigation
 
 				if (1 !== preg_match('~^[^\x00-\x1f\x7f/\\\\]+$~', $file)) {
 					if ('' !== $file) {
-						rex_logger::factory()->warning('navbuilder: dropped media item with invalid file name "' . $file . '"');
+						rex_logger::factory()->warning('navbuilder: dropped media item with invalid file name "{file}"', ['file' => $file]);
 					}
 
 					continue;
@@ -651,11 +653,10 @@ final class Navigation
 				$dataId = $item['dataId'] ?? null;
 
 				if (!is_numeric($profileId) || (int) $profileId <= 0 || !is_numeric($dataId) || (int) $dataId <= 0) {
-					rex_logger::factory()->warning(sprintf(
-						'navbuilder: dropped navigation item with invalid url-addon reference profile "%s" / dataset "%s"',
-						is_scalar($profileId) ? (string) $profileId : gettype($profileId),
-						is_scalar($dataId) ? (string) $dataId : gettype($dataId),
-					));
+					rex_logger::factory()->warning('navbuilder: dropped navigation item with invalid url-addon reference profile "{profile}" / dataset "{dataset}"', [
+						'profile' => is_scalar($profileId) ? (string) $profileId : gettype($profileId),
+						'dataset' => is_scalar($dataId) ? (string) $dataId : gettype($dataId),
+					]);
 					continue;
 				}
 
@@ -686,7 +687,7 @@ final class Navigation
 			}
 
 			if (null === $mapped) {
-				rex_logger::factory()->warning('navbuilder: dropped navigation item with unknown type "' . $rawType . '"');
+				rex_logger::factory()->warning('navbuilder: dropped navigation item with unknown type "{type}"', ['type' => $rawType]);
 				continue;
 			}
 

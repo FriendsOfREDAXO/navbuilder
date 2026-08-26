@@ -30,7 +30,7 @@ final class Api extends rex_api_function
 	/** Backend only — the endpoint exposes article names including offline ones. */
 	protected $published = false;
 
-	public const LIMIT = 30;
+	private const LIMIT = 30;
 
 	public static function tokenId(): string
 	{
@@ -41,7 +41,7 @@ final class Api extends rex_api_function
 	{
 		// CSRF is not authorization — the endpoint exposes article names (incl. offline ones),
 		// so it requires the same permission as the backend page it serves.
-		if (!rex::isBackend() || !rex::getUser()?->hasPerm('navbuilder[]')) {
+		if (!rex::isBackend() || true !== rex::getUser()?->hasPerm('navbuilder[]')) {
 			self::sendJson(['error' => 'access_denied'], rex_response::HTTP_FORBIDDEN);
 		}
 

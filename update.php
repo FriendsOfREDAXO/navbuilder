@@ -14,9 +14,12 @@ require_once __DIR__ . '/lib/Navigation.php';
 // slugs. A too-long name would make the ALTER fail (or truncate) mid-update — abort cleanly
 // instead. Non-slug names keep working via render('name'), but their `REX_NAVBUILDER[…]`
 // snippet can no longer match; that is a warning, not a blocker.
-$names = array_column(
-	rex_sql::factory()->getArray('SELECT `name` FROM ' . rex::getTable('navbuilder_navigation') . ' WHERE `name` IS NOT NULL'),
-	'name',
+$names = array_map(
+	strval(...),
+	array_column(
+		rex_sql::factory()->getArray('SELECT `name` FROM ' . rex::getTable('navbuilder_navigation') . ' WHERE `name` IS NOT NULL'),
+		'name',
+	),
 );
 
 $tooLong = array_filter($names, static fn (string $name): bool => mb_strlen($name) > 191);
@@ -29,8 +32,8 @@ $nonSlug = array_filter($names, static fn (string $name): bool => 1 !== preg_mat
 
 if ([] !== $nonSlug) {
 	rex_logger::factory()->warning(
-		'navbuilder: navigation names are not slugs and cannot be addressed via REX_NAVBUILDER[name=…] (rename them in the backend): "'
-		. implode('", "', $nonSlug) . '"',
+		'navbuilder: navigation names are not slugs and cannot be addressed via REX_NAVBUILDER[name=…] (rename them in the backend): "{names}"',
+		['names' => implode('", "', $nonSlug)],
 	);
 }
 

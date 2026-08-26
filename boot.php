@@ -46,7 +46,7 @@ if (rex::isBackend()) {
 	// Assets belong to this addon's own page only — loading the editor globally used to leak
 	// its jQuery delegates and body styles into every backend page.
 	rex_extension::register('PAGE_CHECKED', static function () {
-		if (!rex::getUser() || 'navbuilder' !== rex_be_controller::getCurrentPagePart(1)) {
+		if (null === rex::getUser() || 'navbuilder' !== rex_be_controller::getCurrentPagePart(1)) {
 			return;
 		}
 

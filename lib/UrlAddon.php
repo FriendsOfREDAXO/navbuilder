@@ -25,7 +25,7 @@ use rex_sql;
  */
 final class UrlAddon
 {
-	public const LIMIT = 30;
+	private const LIMIT = 30;
 
 	/** The "addon missing" skip happens per item — the log line must not. */
 	private static bool $warned = false;

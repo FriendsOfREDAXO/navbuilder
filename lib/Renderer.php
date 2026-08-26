@@ -39,6 +39,8 @@ use rex_url;
  *
  * Supported options: `clang`, `currentId`, `depth` (max levels, 0 = unlimited), `absolute`,
  * plus `fragment`, `itemFragment` and `class` for {@see self::render()}.
+ *
+ * @api projects may use this class directly (usually via the {@see \rex_navbuilder} facade)
  */
 final class Renderer
 {
@@ -56,7 +58,7 @@ final class Renderer
 		$navigation = Navigation::load($name);
 
 		if (null === $navigation) {
-			rex_logger::factory()->warning('navbuilder: navigation "' . $name . '" does not exist');
+			rex_logger::factory()->warning('navbuilder: navigation "{name}" does not exist', ['name' => $name]);
 
 			return [];
 		}
@@ -114,7 +116,7 @@ final class Renderer
 
 		if (null !== $current) {
 			foreach ($current->getPathAsArray() as $pathId) {
-				$ancestors[(int) $pathId] = true;
+				$ancestors[$pathId] = true;
 			}
 			$ancestors[$current->getCategoryId()] = true;
 		}
@@ -247,7 +249,7 @@ final class Renderer
 	private static function hasActive(array $children): bool
 	{
 		foreach ($children as $child) {
-			if ($child['active'] || $child['activePath']) {
+			if (true === $child['active'] || true === $child['activePath']) {
 				return true;
 			}
 		}

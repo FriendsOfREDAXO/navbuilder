@@ -102,8 +102,10 @@ $func = rex_request('func', 'string');
 $csrf = rex_csrf_token::factory('navbuilder_menu');
 
 // Set on a failed save so the editor below can re-render the posted tree instead of reloading
-// the (unchanged) DB copy and discarding the user's edits.
+// the (unchanged) DB copy and discarding the user's edits. `$config` is only non-null when a
+// save was posted — delete/duplicate never carry form data.
 $saveErrorItems = null;
+$config = null;
 
 if (in_array($func, ['save', 'delete', 'duplicate'], true)) {
 	if (!$csrf->isValid()) {
@@ -112,7 +114,7 @@ if (in_array($func, ['save', 'delete', 'duplicate'], true)) {
 	} else {
 		try {
 			if ('save' === $func) {
-				$config = (array) rex_post('config', 'array', []);
+				$config = rex_post('config', 'array', []);
 				$name = (string) ($config['name'] ?? '');
 				$id = Navigation::save($id > 0 ? $id : null, $name, (string) ($config['structure'] ?? ''));
 
@@ -139,12 +141,17 @@ if (in_array($func, ['save', 'delete', 'duplicate'], true)) {
 			// normalizeItems(), which would drop exactly the item whose url was just refused.
 			// The editor must get the tree back verbatim to fix it; its own normalize()/clean()
 			// tolerate unknown shapes, and the next save re-validates everything anyway.
-			if (isset($config)) {
+			if (null !== $config) {
 				$data = json_decode((string) ($config['structure'] ?? ''), true);
 				$posted = is_array($data) ? ($data['items'] ?? $data) : [];
 
+				// Deliberately asserted, not validated (see above) — anything enrich()
+				// cannot digest lands in the catch below.
+				/** @var list<array<string, mixed>> $posted */
+				$posted = is_array($posted) ? array_values($posted) : [];
+
 				try {
-					$saveErrorItems = Navigation::enrich(is_array($posted) ? $posted : []);
+					$saveErrorItems = Navigation::enrich($posted);
 				} catch (Throwable) {
 					// Structurally broken beyond what enrich() tolerates — fall back to the
 					// normalized (lossy) tree rather than a blank editor.
@@ -206,11 +213,11 @@ if ($id > 0 && null === $navigation) {
 
 // After a failed save the posted name wins — reloading the DB name (or '' for a new navigation)
 // would throw away what the user just typed along with the error they have to fix.
-$name = null !== $saveErrorItems && isset($config)
+$name = null !== $saveErrorItems && null !== $config
 	? (string) ($config['name'] ?? '')
 	: (null !== $navigation ? $navigation->name : '');
 $items = null !== $saveErrorItems ? $saveErrorItems : (null !== $navigation ? Navigation::enrich($navigation->items) : []);
-$maxDepth = null !== $saveErrorItems && isset($config)
+$maxDepth = null !== $saveErrorItems && null !== $config
 	? Navigation::decodeMaxDepth((string) ($config['structure'] ?? ''))
 	: (null !== $navigation ? $navigation->maxDepth : null);
 
@@ -274,13 +281,9 @@ foreach ($jsKeys as $key) {
 	$init['i18n'][$key] = rex_i18n::msg('navbuilder_js_' . $key);
 }
 
-/**
- * Last stop before the contract goes over the wire — a project can add keys here (documented
- * above; `textClass` is the one the app itself reads).
- *
- * @var array<string, mixed> $init
- */
-$init = (array) rex_extension::registerPoint(new rex_extension_point('NAVBUILDER_INIT', $init));
+// Last stop before the contract goes over the wire — a project can add keys here (documented
+// above; `textClass` is the one the app itself reads).
+$init = rex_extension::registerPoint(new rex_extension_point('NAVBUILDER_INIT', $init));
 
 $body = '
 	<div class="form-group">
@@ -314,6 +317,8 @@ $fragment->setVar('body', $body, false);
 $fragment->setVar('buttons', $buttons, false);
 $content = $fragment->parse('core/page/section.php');
 
+$initJson = json_encode($init, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+
 ?>
 <form id="<?= $formId ?>" action="<?= rex_url::currentBackendPage() ?>" method="post">
 	<input type="hidden" name="id" value="<?= $id ?>">
@@ -321,5 +326,5 @@ $content = $fragment->parse('core/page/section.php');
 	<?= $content ?>
 </form>
 <script nonce="<?= rex_response::getNonce() ?>">
-window.NavBuilderInit = <?= json_encode($init, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '{}' ?>;
+window.NavBuilderInit = <?= false !== $initJson ? $initJson : '{}' ?>;
 </script>

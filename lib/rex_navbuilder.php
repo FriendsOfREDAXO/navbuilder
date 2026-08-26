@@ -12,6 +12,8 @@ use FriendsOfRedaxo\NavBuilder\Renderer;
  *     $tree = rex_navbuilder::tree('main');
  *
  * `REX_NAVBUILDER[name=main]` in template or module output is replaced by `render()`.
+ *
+ * @api this is the addon's public entry point — nothing here is called by the addon itself
  */
 class rex_navbuilder
 {

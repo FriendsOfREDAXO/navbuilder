@@ -27,5 +27,5 @@ if ([] === $duplicates) {
 		->ensureIndex(new rex_sql_index('name', ['name'], rex_sql_index::UNIQUE))
 		->ensure();
 } else {
-	rex_logger::factory()->warning('navbuilder: skipped UNIQUE(name) index, duplicate navigation names exist: ' . implode(', ', array_column($duplicates, 'name')));
+	rex_logger::factory()->warning('navbuilder: skipped UNIQUE(name) index, duplicate navigation names exist: {names}', ['names' => implode(', ', array_column($duplicates, 'name'))]);
 }

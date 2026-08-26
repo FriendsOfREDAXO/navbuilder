@@ -21,17 +21,17 @@ $itemFragment = (string) $this->getVar('itemFragment', 'navbuilder/item.php');
 
 $classes = [$class . '__item', $class . '__item--' . ($item['type'] ?? 'text')];
 
-if (!empty($item['active'])) {
+if (true === ($item['active'] ?? false)) {
 	$classes[] = 'is-active';
 }
 
-if (!empty($item['activePath'])) {
+if (true === ($item['activePath'] ?? false)) {
 	$classes[] = 'is-active-path';
 }
 
 $children = '';
 
-if (!empty($item['children'])) {
+if ([] !== ($item['children'] ?? [])) {
 	$fragment = new rex_fragment();
 	$fragment->setVar('items', $item['children'], false);
 	$fragment->setVar('depth', $depth + 1, false);
@@ -51,7 +51,7 @@ if (!empty($item['children'])) {
 		$textFragment->setVar('class', $class, false);
 		echo $textFragment->parse('navbuilder/text.php');
 	} elseif (null !== ($item['url'] ?? null)) { ?>
-		<a href="<?= rex_escape($item['url']) ?>"<?= null !== ($item['target'] ?? null) ? ' target="' . rex_escape($item['target']) . '" rel="noopener"' : '' ?><?= !empty($item['active']) ? ' aria-current="page"' : '' ?>><?= rex_escape($item['label'] ?? '') ?></a>
+		<a href="<?= rex_escape($item['url']) ?>"<?= null !== ($item['target'] ?? null) ? ' target="' . rex_escape($item['target']) . '" rel="noopener"' : '' ?><?= true === ($item['active'] ?? false) ? ' aria-current="page"' : '' ?>><?= rex_escape($item['label'] ?? '') ?></a>
 	<?php } else { ?>
 		<span class="<?= rex_escape($class . '__label') ?>"><?= rex_escape($item['label'] ?? '') ?></span>
 	<?php } ?>
