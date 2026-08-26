@@ -222,6 +222,49 @@ final class Navigation
 	}
 
 	/**
+	 * Every navigation containing an item of `$type` whose `$field` equals `$value` — used by the
+	 * boot.php deletion guards ("article X / media file Y is still referenced").
+	 *
+	 * Scans all rows; the table holds a handful of navigations, so decode-and-walk beats trying
+	 * to LIKE-match values inside the JSON column.
+	 *
+	 * @return list<array{id: int, name: string}>
+	 */
+	public static function referencing(string $type, string $field, int|string $value): array
+	{
+		$found = [];
+
+		foreach (rex_sql::factory()->getArray('SELECT `id`, `name`, `structure` FROM ' . self::table()) as $row) {
+			if (self::itemsReference(self::decode((string) $row['structure']), $type, $field, $value)) {
+				$found[] = ['id' => (int) $row['id'], 'name' => (string) $row['name']];
+			}
+		}
+
+		return $found;
+	}
+
+	/**
+	 * Pure recursive matcher behind {@see self::referencing()}. Expects normalized (decoded)
+	 * items, so v1 aliases and `href` fallbacks are already resolved.
+	 *
+	 * @param list<array<string, mixed>> $items
+	 */
+	public static function itemsReference(array $items, string $type, string $field, int|string $value): bool
+	{
+		foreach ($items as $item) {
+			if ($type === ($item['type'] ?? '') && $value === ($item[$field] ?? null)) {
+				return true;
+			}
+
+			if (self::itemsReference($item['children'] ?? [], $type, $field, $value)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Migrates every stored navigation to schema v2.
 	 *
 	 * Idempotent: rows already carrying `"v":2` *and* no renamed type are skipped, and

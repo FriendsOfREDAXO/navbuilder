@@ -125,6 +125,10 @@ Security-relevant defects found during the pre-rewrite analysis:
 
 ### Added (user-feedback pass)
 
+- **Deletion guards**: an article still referenced by a navigation can no longer be deleted
+  (`ART_PRE_DELETED`, the error links the affected navigations — same pattern as yrewrite's
+  domain guard), and the mediapool reports files referenced by `media` items as "in use"
+  (`MEDIA_IS_IN_USE`) and refuses their deletion.
 - **Insert below**: every row has a `+` action that opens the three add buttons as a ghost row
   below the item (and below its children — where the new sibling actually lands) instead of only
   appending at the end of the list. No separate "add child" affordance: the existing indent (`→`)

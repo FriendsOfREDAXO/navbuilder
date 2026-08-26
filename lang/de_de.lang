@@ -20,6 +20,7 @@ navbuilder_msg_deleted = Navigation wurde gelöscht.
 navbuilder_msg_duplicated = Navigation wurde dupliziert.
 navbuilder_msg_migrated = {0} Navigation(en) auf das neue Datenformat migriert.
 
+navbuilder_error_article_in_use = Der Artikel kann nicht gelöscht werden, er wird in folgenden Navigationen verwendet:
 navbuilder_error_name_required = Bitte einen Namen für die Navigation angeben.
 navbuilder_error_name_exists = Es gibt bereits eine Navigation mit dem Namen "{0}".
 navbuilder_error_name_invalid = Der Name "{0}" ist ungültig. Erlaubt sind Kleinbuchstaben, Ziffern, "-" und "_".
@@ -29,6 +30,7 @@ navbuilder_error_max_depth = Die Navigation ist {1} Ebenen tief, erlaubt sind ma
 navbuilder_error_structure_invalid = Die übermittelte Navigationsstruktur ist kein gültiges JSON und wurde nicht gespeichert.
 navbuilder_error_structure_too_large = Die Navigation ist zu groß ({0} Bytes, Maximum {1}). Bitte Einträge entfernen oder Texte kürzen.
 navbuilder_error_update_names_too_long = Update abgebrochen: folgende Navigations-Namen sind länger als 191 Zeichen und müssen vor dem Update gekürzt werden: "{0}"
+navbuilder_media_in_use = NavBuilder-Navigation
 navbuilder_msg_migration_dropped = {0} Einträge konnten nicht migriert werden und wurden entfernt — Details im Systemlog, das Original liegt in der Spalte structure_legacy.
 
 # Strings des Backend-Editors (werden als window.NavBuilderInit.i18n übergeben)

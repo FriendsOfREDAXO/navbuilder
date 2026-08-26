@@ -86,6 +86,11 @@ Rendern über `rex_media::get()` aufgelöst; ohne `label` erscheint der Dateinam
 Datei verschwindet aus der Frontend-Ausgabe und wird im Backend markiert — genau wie ein
 gelöschter Artikel.
 
+Damit es gar nicht erst so weit kommt, schützt NavBuilder beide Referenzen beim Löschen: Ein
+Artikel, der noch in einer Navigation verwendet wird, lässt sich nicht löschen (die Fehlermeldung
+verlinkt die betroffenen Navigationen), und der Medienpool meldet eine noch referenzierte Datei
+als „in Benutzung" und verweigert das Löschen ebenfalls.
+
 `url`-Einträge zeigen auf eine vom [url-Addon](https://github.com/FriendsOfREDAXO/url) generierte
 Datensatz-URL und setzen dieses Addon voraus (siehe unten). Gespeichert werden nur `profileId` und
 `dataId` — Adresse und Name werden beim Rendern aufgelöst (Name: der SEO-Titel des Generators,

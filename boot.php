@@ -7,6 +7,37 @@ declare(strict_types=1);
 rex_api_function::register('navbuilder_articles', FriendsOfRedaxo\NavBuilder\Api::class);
 rex_api_function::register('navbuilder_urls', FriendsOfRedaxo\NavBuilder\UrlApi::class);
 
+// Deleting an article a navigation still points at would make the entry silently vanish at
+// render time (the Renderer drops unresolvable articles) — block the deletion instead and link
+// to the navigations, same pattern as yrewrite's domain guard. Registered outside the backend
+// guard on purpose: deletions can also come through the console.
+rex_extension::register('ART_PRE_DELETED', static function (rex_extension_point $ep): void {
+	$used = FriendsOfRedaxo\NavBuilder\Navigation::referencing('article', 'articleId', (int) $ep->getParam('id'));
+
+	if ([] === $used) {
+		return;
+	}
+
+	$links = array_map(
+		static fn (array $nav): string => '<a href="' . rex_url::backendPage('navbuilder/menus', ['func' => 'edit', 'id' => $nav['id']]) . '">' . rex_escape($nav['name']) . '</a>',
+		$used,
+	);
+
+	throw new rex_api_exception(rex_i18n::msg('navbuilder_error_article_in_use') . '<ul><li>' . implode('</li><li>', $links) . '</li></ul>');
+});
+
+// Same idea for mediapool files referenced by `media` items — this EP is a soft guard: the
+// mediapool refuses the deletion as long as usages are reported.
+rex_extension::register('MEDIA_IS_IN_USE', static function (rex_extension_point $ep): array {
+	$warning = $ep->getSubject();
+
+	foreach (FriendsOfRedaxo\NavBuilder\Navigation::referencing('media', 'file', (string) $ep->getParam('filename')) as $nav) {
+		$warning[] = rex_i18n::msg('navbuilder_media_in_use') . ': <a href="' . rex_url::backendPage('navbuilder/menus', ['func' => 'edit', 'id' => $nav['id']]) . '">' . rex_escape($nav['name']) . '</a>';
+	}
+
+	return $warning;
+});
+
 if (rex::isBackend()) {
 	// package.yml declares `perm: navbuilder[]` on the page, but that alone doesn't make the
 	// permission pickable in the role editor — it has to be registered explicitly too.

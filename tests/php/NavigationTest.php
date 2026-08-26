@@ -236,4 +236,25 @@ final class NavigationTest extends TestCase
 		self::assertSame(3, Navigation::decodeMaxDepth('{"v":2,"maxDepth":3,"items":[]}'));
 		self::assertSame(Navigation::MAX_DEPTH, Navigation::decodeMaxDepth('{"v":2,"maxDepth":99,"items":[]}'));
 	}
+
+	// ── reference lookup (deletion guards) ──────────────────────────────────────────────────
+
+	public function testItemsReferenceMatchesTypeAndFieldAtAnyDepth(): void
+	{
+		$items = Navigation::decode(json_encode(['v' => 2, 'items' => [
+			['id' => 'aaaaaaaa', 'type' => 'link', 'url' => 'https://example.com', 'children' => [
+				['id' => 'bbbbbbbb', 'type' => 'article', 'articleId' => 12, 'children' => []],
+				['id' => 'cccccccc', 'type' => 'media', 'file' => 'prospekt.pdf', 'children' => []],
+			]],
+		]]));
+
+		self::assertTrue(Navigation::itemsReference($items, 'article', 'articleId', 12));
+		self::assertTrue(Navigation::itemsReference($items, 'media', 'file', 'prospekt.pdf'));
+		self::assertFalse(Navigation::itemsReference($items, 'article', 'articleId', 13));
+		self::assertFalse(Navigation::itemsReference($items, 'media', 'file', 'other.pdf'));
+		// Strict comparison on purpose: an articleId is stored as int, "12" must not match a
+		// media file name and vice versa.
+		self::assertFalse(Navigation::itemsReference($items, 'article', 'articleId', '12'));
+		self::assertFalse(Navigation::itemsReference($items, 'link', 'articleId', 12));
+	}
 }
