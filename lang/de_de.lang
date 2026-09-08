@@ -1,0 +1,97 @@
+navbuilder_title = NavBuilder
+navbuilder_menus = Navigationen
+
+navbuilder_add = Navigation anlegen
+navbuilder_edit = Navigation bearbeiten
+navbuilder_name = Name
+navbuilder_snippet = Snippet
+navbuilder_structure = Struktur
+navbuilder_updated_at = Zuletzt geändert
+navbuilder_save = Speichern
+navbuilder_cancel = Abbrechen
+navbuilder_delete = Löschen
+navbuilder_duplicate = Duplizieren
+navbuilder_loading = Navigations-Editor wird geladen …
+navbuilder_list_empty = Es wurde noch keine Navigation angelegt.
+navbuilder_confirm_delete = Diese Navigation wirklich löschen?
+
+navbuilder_msg_saved = Navigation "{0}" wurde gespeichert.
+navbuilder_msg_deleted = Navigation wurde gelöscht.
+navbuilder_msg_duplicated = Navigation wurde dupliziert.
+navbuilder_msg_migrated = {0} Navigation(en) auf das neue Datenformat migriert.
+
+navbuilder_error_article_in_use = Der Artikel kann nicht gelöscht werden, er wird in folgenden Navigationen verwendet:
+navbuilder_error_name_required = Bitte einen Namen für die Navigation angeben.
+navbuilder_error_name_exists = Es gibt bereits eine Navigation mit dem Namen "{0}".
+navbuilder_error_name_invalid = Der Name "{0}" ist ungültig. Erlaubt sind Kleinbuchstaben, Ziffern, "-" und "_".
+navbuilder_error_not_found = Diese Navigation existiert nicht (mehr).
+navbuilder_error_url_scheme = Die Adresse "{0}" verwendet ein nicht erlaubtes Protokoll. Erlaubt sind http, https, mailto, tel sowie relative Links.
+navbuilder_error_max_depth = Die Navigation ist {1} Ebenen tief, erlaubt sind maximal {0}. Bitte Einträge eine Ebene höher schieben.
+navbuilder_error_structure_invalid = Die übermittelte Navigationsstruktur ist kein gültiges JSON und wurde nicht gespeichert.
+navbuilder_error_structure_too_large = Die Navigation ist zu groß ({0} Bytes, Maximum {1}). Bitte Einträge entfernen oder Texte kürzen.
+navbuilder_error_update_names_too_long = Update abgebrochen: folgende Navigations-Namen sind länger als 191 Zeichen und müssen vor dem Update gekürzt werden: "{0}"
+navbuilder_media_in_use = NavBuilder-Navigation
+navbuilder_msg_migration_dropped = {0} Einträge konnten nicht migriert werden und wurden entfernt — Details im Systemlog, das Original liegt in der Spalte structure_legacy.
+
+# Strings des Backend-Editors (werden als window.NavBuilderInit.i18n übergeben)
+navbuilder_js_add_article = Artikel hinzufügen
+navbuilder_js_add_below = Element darunter einfügen
+navbuilder_js_add_link = Link hinzufügen
+navbuilder_js_add_media = Medium hinzufügen
+navbuilder_js_add_text = Text hinzufügen
+navbuilder_js_add_url = URL-Datensatz hinzufügen
+navbuilder_js_apply = Übernehmen
+navbuilder_js_article = Artikel
+navbuilder_js_article_required = Bitte einen Artikel wählen.
+navbuilder_js_cancel = Abbrechen
+navbuilder_js_choose_article = Artikel wählen
+navbuilder_js_choose_media = Datei wählen
+navbuilder_js_choose_url = Datensatz wählen
+navbuilder_js_confirm_remove = Diesen Eintrag samt Unterpunkten entfernen?
+navbuilder_js_deleted = gelöscht
+navbuilder_js_duplicate = Duplizieren
+navbuilder_js_edit = Bearbeiten
+navbuilder_js_empty = Noch keine Einträge. Füge oben einen Artikel, Link, ein Medium oder einen Text hinzu.
+navbuilder_js_file = Datei
+navbuilder_js_hidden_everywhere = Dieser Eintrag ist in keiner Sprache sichtbar.
+navbuilder_js_hidden_in = In diesen Sprachen ausgeblendet
+navbuilder_js_item_id = Interne ID dieses Eintrags — für Fragment-Overrides im Frontend
+navbuilder_js_item_type = Typ
+navbuilder_js_kind_email = E-Mail
+navbuilder_js_kind_tel = Telefon
+navbuilder_js_kind_url = Link
+navbuilder_js_label = Beschriftung
+navbuilder_js_label_override = Abweichende Beschriftung (leer = Artikelname)
+navbuilder_js_link = Link
+navbuilder_js_link_kind = Erkannte Art des Links
+navbuilder_js_link_placeholder = https://example.com, name@example.com, +41 44 123 45 67
+navbuilder_js_link_value = Ziel (URL, E-Mail-Adresse oder Telefonnummer)
+navbuilder_js_max_depth = Maximale Tiefe
+navbuilder_js_max_depth_hint = leer = unbegrenzt
+navbuilder_js_media = Medium
+navbuilder_js_media_required = Bitte eine Datei wählen.
+navbuilder_js_move_down = Nach unten verschieben
+navbuilder_js_move_in = Eine Ebene tiefer
+navbuilder_js_move_out = Eine Ebene höher
+navbuilder_js_move_up = Nach oben verschieben
+navbuilder_js_new_window = In neuem Fenster öffnen
+navbuilder_js_no_results = Keine Artikel gefunden
+navbuilder_js_offline = offline
+navbuilder_js_remove = Entfernen
+navbuilder_js_search = Suchen
+navbuilder_js_search_placeholder = Artikel suchen …
+navbuilder_js_suggestions = Vorschläge
+navbuilder_js_text = Text
+navbuilder_js_text_content = Text (HTML erlaubt)
+navbuilder_js_text_discarded = Der Text-Inhalt wird beim Übernehmen entfernt.
+navbuilder_js_url = URL
+navbuilder_js_url_addon_missing = URL-Addon nicht verfügbar
+navbuilder_js_url_all_profiles = Alle Profile
+navbuilder_js_url_item_required = Bitte einen Datensatz wählen.
+navbuilder_js_url_label_override = Abweichende Beschriftung (leer = Datensatz-Titel)
+navbuilder_js_url_no_results = Keine Datensätze gefunden
+navbuilder_js_url_profile = Profil
+navbuilder_js_url_required = Bitte ein Ziel angeben.
+navbuilder_js_url_scheme = Diese Adresse verwendet ein nicht erlaubtes Protokoll. Erlaubt sind http, https, mailto, tel sowie relative Links.
+navbuilder_js_url_search_placeholder = Datensatz suchen …
+navbuilder_js_visible_in = Sichtbar in

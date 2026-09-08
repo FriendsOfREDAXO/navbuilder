@@ -1,19 +1,35 @@
 package: navbuilder
-version: '1.1.0'
-author: Friends Of REDAXO
+version: '2.0.0-dev'
+author: 'Friends Of REDAXO'
 supportpage: https://github.com/FriendsOfREDAXO/navbuilder
+license: MIT
+
+description:
+    de: 'NavBuilder — Navigationen per Drag & Drop bauen und über überschreibbare Fragmente ausgeben.'
+    en: 'NavBuilder — build navigations via drag & drop and render them through overridable fragments.'
 
 page:
-    title: NavBuilder
+    title: translate:navbuilder_title
     perm: navbuilder[]
     pjax: false
     icon: rex-icon fa-bars
     subpages:
-            menus: {title: 'Navigationen'}
+        menus: {title: translate:navbuilder_menus}
 
 requires:
     packages:
         structure: '^2.9.0'
-        phpmailer: '^2.7.0'
-        yform: '>3.3.1,<6'
-    redaxo: '^5.9.0'
+        mediapool: '^2.9.0'
+    redaxo: '^5.18.0'
+    php:
+        version: '>=8.1'
+
+installer_ignore:
+    - .github
+    - .gitignore
+    - CLAUDE.md
+    - composer.json
+    - composer.lock
+    - phpunit.xml.dist
+    - tests
+    - vendor

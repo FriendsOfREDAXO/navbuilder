@@ -1,0 +1,97 @@
+navbuilder_title = NavBuilder
+navbuilder_menus = Navigations
+
+navbuilder_add = Create navigation
+navbuilder_edit = Edit navigation
+navbuilder_name = Name
+navbuilder_snippet = Snippet
+navbuilder_structure = Structure
+navbuilder_updated_at = Last changed
+navbuilder_save = Save
+navbuilder_cancel = Cancel
+navbuilder_delete = Delete
+navbuilder_duplicate = Duplicate
+navbuilder_loading = Loading navigation editor …
+navbuilder_list_empty = No navigation has been created yet.
+navbuilder_confirm_delete = Really delete this navigation?
+
+navbuilder_msg_saved = Navigation "{0}" has been saved.
+navbuilder_msg_deleted = Navigation has been deleted.
+navbuilder_msg_duplicated = Navigation has been duplicated.
+navbuilder_msg_migrated = Migrated {0} navigation(s) to the new data format.
+
+navbuilder_error_article_in_use = The article cannot be deleted, it is used in the following navigations:
+navbuilder_error_name_required = Please provide a name for the navigation.
+navbuilder_error_name_exists = A navigation named "{0}" already exists.
+navbuilder_error_name_invalid = The name "{0}" is invalid. Allowed are lowercase letters, digits, "-" and "_".
+navbuilder_error_not_found = This navigation does not (or no longer) exist.
+navbuilder_error_url_scheme = The address "{0}" uses a scheme that is not allowed. Permitted are http, https, mailto, tel and relative links.
+navbuilder_error_max_depth = The navigation is {1} levels deep, the maximum is {0}. Please move entries up a level.
+navbuilder_error_structure_invalid = The submitted navigation structure is not valid JSON and was not saved.
+navbuilder_error_structure_too_large = The navigation is too large ({0} bytes, maximum {1}). Please remove entries or shorten texts.
+navbuilder_error_update_names_too_long = Update aborted: the following navigation names are longer than 191 characters and must be shortened before updating: "{0}"
+navbuilder_media_in_use = NavBuilder navigation
+navbuilder_msg_migration_dropped = {0} items could not be migrated and were removed — see the system log for details, the original is kept in the structure_legacy column.
+
+# Backend editor strings (handed over as window.NavBuilderInit.i18n)
+navbuilder_js_add_article = Add article
+navbuilder_js_add_below = Insert entry below
+navbuilder_js_add_link = Add link
+navbuilder_js_add_media = Add media file
+navbuilder_js_add_text = Add text
+navbuilder_js_add_url = Add URL dataset
+navbuilder_js_apply = Apply
+navbuilder_js_article = Article
+navbuilder_js_article_required = Please choose an article.
+navbuilder_js_cancel = Cancel
+navbuilder_js_choose_article = Choose article
+navbuilder_js_choose_media = Choose file
+navbuilder_js_choose_url = Choose dataset
+navbuilder_js_confirm_remove = Remove this entry and all its children?
+navbuilder_js_deleted = deleted
+navbuilder_js_duplicate = Duplicate
+navbuilder_js_edit = Edit
+navbuilder_js_empty = No entries yet. Add an article, link, media file or text above.
+navbuilder_js_file = File
+navbuilder_js_hidden_everywhere = This entry is not visible in any language.
+navbuilder_js_hidden_in = Hidden in these languages
+navbuilder_js_item_id = Internal id of this entry — for frontend fragment overrides
+navbuilder_js_item_type = Type
+navbuilder_js_kind_email = Email
+navbuilder_js_kind_tel = Phone
+navbuilder_js_kind_url = Link
+navbuilder_js_label = Label
+navbuilder_js_label_override = Custom label (empty = article name)
+navbuilder_js_link = Link
+navbuilder_js_link_kind = Detected link kind
+navbuilder_js_link_placeholder = https://example.com, name@example.com, +41 44 123 45 67
+navbuilder_js_link_value = Target (URL, email address or phone number)
+navbuilder_js_max_depth = Maximum depth
+navbuilder_js_max_depth_hint = empty = unlimited
+navbuilder_js_media = Media
+navbuilder_js_media_required = Please choose a file.
+navbuilder_js_move_down = Move down
+navbuilder_js_move_in = Indent one level
+navbuilder_js_move_out = Outdent one level
+navbuilder_js_move_up = Move up
+navbuilder_js_new_window = Open in a new window
+navbuilder_js_no_results = No articles found
+navbuilder_js_offline = offline
+navbuilder_js_remove = Remove
+navbuilder_js_search = Search
+navbuilder_js_search_placeholder = Search articles …
+navbuilder_js_suggestions = Suggestions
+navbuilder_js_text = Text
+navbuilder_js_text_content = Text (HTML allowed)
+navbuilder_js_text_discarded = The text body will be discarded when you apply.
+navbuilder_js_url = URL
+navbuilder_js_url_addon_missing = URL addon not available
+navbuilder_js_url_all_profiles = All profiles
+navbuilder_js_url_item_required = Please choose a dataset.
+navbuilder_js_url_label_override = Custom label (empty = dataset title)
+navbuilder_js_url_no_results = No datasets found
+navbuilder_js_url_profile = Profile
+navbuilder_js_url_required = Please provide a target.
+navbuilder_js_url_scheme = This address uses a scheme that is not allowed. Permitted are http, https, mailto, tel and relative links.
+navbuilder_js_url_search_placeholder = Search datasets …
+navbuilder_js_visible_in = Visible in
