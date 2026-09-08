@@ -207,6 +207,25 @@ aber nie per Snippet ansprechen.
 Das Snippet zum Einbinden einer Navigation (`REX_NAVBUILDER[name=…]`) steht in der Liste neben
 jedem Eintrag.
 
+### Berechtigungen (MultiSite / MultiDomain)
+
+Drei Stufen, alle im Rollen-Editor unter *Benutzer → Rollen*:
+
+- **`navbuilder[]`** (Seiten-Berechtigung): öffnet die NavBuilder-Seite — Voraussetzung für
+  alles Weitere.
+- **Navigationen** (Auswahlliste): welche Navigationen die Rolle **bearbeiten** darf. Die
+  Auswahl ist an die Navigation gebunden (nicht an ihren Namen), ein Umbenennen ändert also
+  nichts an den Rechten. *„Alle Navigationen bearbeiten"* erlaubt das Bearbeiten sämtlicher
+  Navigationen — aber weiterhin kein Anlegen oder Löschen.
+- **`navbuilder[manage]`** (Option): Navigationen **anlegen, duplizieren und löschen** —
+  schließt das Bearbeiten aller Navigationen ein. Admins haben dieses Recht implizit.
+
+Damit lässt sich das MultiSite-Szenario abbilden: Die Site-Administration bekommt
+`navbuilder[manage]`, die Redaktion je Domain eine Rolle mit genau ihren Navigationen.
+Redakteure ohne Auswahl sehen eine leere Liste. Wird eine Navigation gelöscht, wird sie
+automatisch aus allen Rollen entfernt. Alle Prüfungen laufen serverseitig — die ausgeblendeten
+Buttons sind nur Komfort.
+
 ## Frontend-API
 
 ```php
