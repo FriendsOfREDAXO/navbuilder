@@ -196,6 +196,24 @@ never be addressed by a snippet.
 The snippet to embed a navigation (`REX_NAVBUILDER[name=…]`) is shown next to each entry in the
 list.
 
+### Permissions (multisite / multidomain)
+
+Three layers, all in the role editor under *Users → Roles*:
+
+- **`navbuilder[]`** (page permission): opens the NavBuilder page — prerequisite for
+  everything else.
+- **Navigations** (multi-select): which navigations the role may **edit**. The selection is
+  bound to the navigation itself (not its name), so renaming never changes permissions.
+  *"Edit all navigations"* allows editing every navigation — but still no creating or
+  deleting.
+- **`navbuilder[manage]`** (option): **create, duplicate and delete** navigations — includes
+  editing all of them. Admins have this implicitly.
+
+This maps the multisite scenario directly: site administration gets `navbuilder[manage]`,
+each domain's editors get a role with exactly their navigations. Editors with no selection
+see an empty list. Deleting a navigation automatically removes it from all roles. All checks
+run server-side — the hidden buttons are convenience only.
+
 ## Frontend API
 
 ```php

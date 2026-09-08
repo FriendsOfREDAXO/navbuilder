@@ -8,6 +8,7 @@ use JsonException;
 use rex;
 use rex_article;
 use rex_clang;
+use rex_complex_perm;
 use rex_functional_exception;
 use rex_i18n;
 use rex_logger;
@@ -198,7 +199,15 @@ final class Navigation
 		$sql->setWhere(['id' => $id]);
 		$sql->delete();
 
-		return $sql->getRows() > 0;
+		if ($sql->getRows() > 0) {
+			// Drop the id from every role's navbuilder permission set (see NavigationPerm) —
+			// same housekeeping structure does for deleted categories.
+			rex_complex_perm::removeItem('navbuilder', $id);
+
+			return true;
+		}
+
+		return false;
 	}
 
 	/** @return int|null the id of the copy, or null when the source does not exist */

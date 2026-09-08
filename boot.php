@@ -43,6 +43,11 @@ if (rex::isBackend()) {
 	// permission pickable in the role editor — it has to be registered explicitly too.
 	rex_perm::register('navbuilder[]');
 
+	// Per-navigation permissions (see NavigationPerm): `navbuilder[manage]` grants full
+	// control, the complex perm limits non-managers to selected navigations.
+	rex_perm::register('navbuilder[manage]', null, rex_perm::OPTIONS);
+	rex_complex_perm::register('navbuilder', FriendsOfRedaxo\NavBuilder\NavigationPerm::class);
+
 	// Assets belong to this addon's own page only — loading the editor globally used to leak
 	// its jQuery delegates and body styles into every backend page.
 	rex_extension::register('PAGE_CHECKED', static function () {

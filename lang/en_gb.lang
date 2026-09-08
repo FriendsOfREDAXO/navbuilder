@@ -25,6 +25,7 @@ navbuilder_error_name_required = Please provide a name for the navigation.
 navbuilder_error_name_exists = A navigation named "{0}" already exists.
 navbuilder_error_name_invalid = The name "{0}" is invalid. Allowed are lowercase letters, digits, "-" and "_".
 navbuilder_error_not_found = This navigation does not (or no longer) exist.
+navbuilder_error_no_permission = You are not permitted to perform this action.
 navbuilder_error_url_scheme = The address "{0}" uses a scheme that is not allowed. Permitted are http, https, mailto, tel and relative links.
 navbuilder_error_max_depth = The navigation is {1} levels deep, the maximum is {0}. Please move entries up a level.
 navbuilder_error_structure_invalid = The submitted navigation structure is not valid JSON and was not saved.
@@ -95,3 +96,8 @@ navbuilder_js_url_required = Please provide a target.
 navbuilder_js_url_scheme = This address uses a scheme that is not allowed. Permitted are http, https, mailto, tel and relative links.
 navbuilder_js_url_search_placeholder = Search datasets …
 navbuilder_js_visible_in = Visible in
+
+# Permissions (role editor)
+perm_options_navbuilder[manage] = Create, duplicate and delete navigations (includes editing all navigations)
+navbuilder_perm_navigations = Navigations
+navbuilder_perm_all_navigations = Edit all navigations

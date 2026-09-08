@@ -92,6 +92,7 @@ declare(strict_types=1);
 
 use FriendsOfRedaxo\NavBuilder\Api;
 use FriendsOfRedaxo\NavBuilder\Navigation;
+use FriendsOfRedaxo\NavBuilder\NavigationPerm;
 use FriendsOfRedaxo\NavBuilder\UrlAddon;
 use FriendsOfRedaxo\NavBuilder\UrlApi;
 
@@ -100,6 +101,23 @@ use FriendsOfRedaxo\NavBuilder\UrlApi;
 $id = rex_request('id', 'int');
 $func = rex_request('func', 'string');
 $csrf = rex_csrf_token::factory('navbuilder_menu');
+
+// The page permission (`navbuilder[]`) only opens this page. What a user may do here is
+// decided by NavigationPerm — enforced server-side; the hidden buttons below are
+// convenience only.
+$mayManage = NavigationPerm::mayManage();
+
+$allowed = match ($func) {
+	'' => true,
+	'add', 'delete', 'duplicate' => $mayManage,
+	// edit/save: creating (id = 0) needs manage, touching an existing row needs its edit perm
+	default => $id > 0 ? NavigationPerm::mayEdit($id) : $mayManage,
+};
+
+if (!$allowed) {
+	echo rex_view::error(rex_i18n::msg('navbuilder_error_no_permission'));
+	$func = '';
+}
 
 // Set on a failed save so the editor below can re-render the posted tree instead of reloading
 // the (unchanged) DB copy and discarding the user's edits. `$config` is only non-null when a
@@ -164,13 +182,19 @@ if (in_array($func, ['save', 'delete', 'duplicate'], true)) {
 
 if (!in_array($func, ['add', 'edit'], true)) {
 	// ── List ────────────────────────────────────────────────────────────────────────────────
+	// null = unrestricted; an empty permission set matches nothing (id 0 never exists)
+	$allowedIds = NavigationPerm::allowedIds();
+	$where = null === $allowedIds ? '' : ' WHERE `id` IN (' . implode(',', [0, ...$allowedIds]) . ')';
+
 	$list = rex_list::factory(
-		'SELECT `id`, `name`, CONCAT(\'REX_NAVBUILDER[name=\', `name`, \']\') AS `snippet`, `updated_at` FROM ' . Navigation::table() . ' ORDER BY `name` ASC',
+		'SELECT `id`, `name`, CONCAT(\'REX_NAVBUILDER[name=\', `name`, \']\') AS `snippet`, `updated_at` FROM ' . Navigation::table() . $where . ' ORDER BY `name` ASC',
 	);
 	$list->addTableAttribute('class', 'table-striped');
 	$list->setNoRowsMessage(rex_i18n::msg('navbuilder_list_empty'));
 
-	$addIcon = '<a href="' . $list->getUrl(['func' => 'add']) . '" title="' . rex_escape(rex_i18n::msg('navbuilder_add')) . '"><i class="rex-icon rex-icon-add-action"></i></a>';
+	$addIcon = $mayManage
+		? '<a href="' . $list->getUrl(['func' => 'add']) . '" title="' . rex_escape(rex_i18n::msg('navbuilder_add')) . '"><i class="rex-icon rex-icon-add-action"></i></a>'
+		: '<i class="rex-icon fa-bars"></i>';
 	$list->addColumn($addIcon, '<i class="rex-icon fa-bars"></i>', 0, ['<th class="rex-table-icon">###VALUE###</th>', '<td class="rex-table-icon">###VALUE###</td>']);
 	$list->setColumnParams($addIcon, ['func' => 'edit', 'id' => '###id###']);
 
@@ -183,14 +207,16 @@ if (!in_array($func, ['add', 'edit'], true)) {
 	$list->setColumnLabel('updated_at', rex_i18n::msg('navbuilder_updated_at'));
 	$list->setColumnFormat('updated_at', 'date', 'd.m.Y H:i');
 
-	$list->addColumn('duplicate', '<i class="rex-icon fa-copy"></i> ' . rex_i18n::msg('navbuilder_duplicate'));
-	$list->setColumnLabel('duplicate', '');
-	$list->setColumnParams('duplicate', ['func' => 'duplicate', 'id' => '###id###'] + $csrf->getUrlParams());
+	if ($mayManage) {
+		$list->addColumn('duplicate', '<i class="rex-icon fa-copy"></i> ' . rex_i18n::msg('navbuilder_duplicate'));
+		$list->setColumnLabel('duplicate', '');
+		$list->setColumnParams('duplicate', ['func' => 'duplicate', 'id' => '###id###'] + $csrf->getUrlParams());
 
-	$list->addColumn('delete', '<i class="rex-icon rex-icon-delete"></i> ' . rex_i18n::msg('navbuilder_delete'));
-	$list->setColumnLabel('delete', '');
-	$list->setColumnParams('delete', ['func' => 'delete', 'id' => '###id###'] + $csrf->getUrlParams());
-	$list->addLinkAttribute('delete', 'data-confirm', rex_i18n::msg('navbuilder_confirm_delete'));
+		$list->addColumn('delete', '<i class="rex-icon rex-icon-delete"></i> ' . rex_i18n::msg('navbuilder_delete'));
+		$list->setColumnLabel('delete', '');
+		$list->setColumnParams('delete', ['func' => 'delete', 'id' => '###id###'] + $csrf->getUrlParams());
+		$list->addLinkAttribute('delete', 'data-confirm', rex_i18n::msg('navbuilder_confirm_delete'));
+	}
 
 	$list->removeColumn('id');
 
@@ -306,7 +332,7 @@ $buttons = '
 	<a class="btn btn-abort" href="' . rex_url::currentBackendPage() . '">' . rex_i18n::msg('navbuilder_cancel') . '</a>
 ';
 
-if ($id > 0) {
+if ($id > 0 && $mayManage) {
 	$buttons .= '<a class="btn btn-delete pull-right" href="' . rex_url::currentBackendPage(['func' => 'delete', 'id' => $id] + $csrf->getUrlParams()) . '" data-confirm="' . rex_escape(rex_i18n::msg('navbuilder_confirm_delete')) . '">' . rex_i18n::msg('navbuilder_delete') . '</a>';
 }
 

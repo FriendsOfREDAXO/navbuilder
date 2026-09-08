@@ -2,6 +2,16 @@
 
 ## 2.0.0
 
+### Per-navigation permissions (#16)
+
+- New complex permission **Navigations** in the role editor: which navigations a role may
+  edit (selection bound to the navigation id, rename-safe; "edit all" grants editing
+  everything without create/delete rights).
+- New option permission **`navbuilder[manage]`**: create, duplicate and delete navigations,
+  includes editing all of them; admins implicitly. Without it the list/editor hide those
+  actions — enforced server-side either way.
+- Deleting a navigation removes its id from all role permission sets.
+
 ### Hardening pass (pre-release audit)
 
 - `structure`/`structure_legacy` are `MEDIUMTEXT` now — a legal tree (or one long text body)

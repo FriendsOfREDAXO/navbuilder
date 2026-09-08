@@ -25,6 +25,7 @@ navbuilder_error_name_required = Bitte einen Namen für die Navigation angeben.
 navbuilder_error_name_exists = Es gibt bereits eine Navigation mit dem Namen "{0}".
 navbuilder_error_name_invalid = Der Name "{0}" ist ungültig. Erlaubt sind Kleinbuchstaben, Ziffern, "-" und "_".
 navbuilder_error_not_found = Diese Navigation existiert nicht (mehr).
+navbuilder_error_no_permission = Keine Berechtigung für diese Aktion.
 navbuilder_error_url_scheme = Die Adresse "{0}" verwendet ein nicht erlaubtes Protokoll. Erlaubt sind http, https, mailto, tel sowie relative Links.
 navbuilder_error_max_depth = Die Navigation ist {1} Ebenen tief, erlaubt sind maximal {0}. Bitte Einträge eine Ebene höher schieben.
 navbuilder_error_structure_invalid = Die übermittelte Navigationsstruktur ist kein gültiges JSON und wurde nicht gespeichert.
@@ -95,3 +96,8 @@ navbuilder_js_url_required = Bitte ein Ziel angeben.
 navbuilder_js_url_scheme = Diese Adresse verwendet ein nicht erlaubtes Protokoll. Erlaubt sind http, https, mailto, tel sowie relative Links.
 navbuilder_js_url_search_placeholder = Datensatz suchen …
 navbuilder_js_visible_in = Sichtbar in
+
+# Berechtigungen (Rollen-Editor)
+perm_options_navbuilder[manage] = Navigationen anlegen, duplizieren und löschen (schließt das Bearbeiten aller Navigationen ein)
+navbuilder_perm_navigations = Navigationen
+navbuilder_perm_all_navigations = Alle Navigationen bearbeiten
