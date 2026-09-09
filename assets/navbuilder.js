@@ -62,6 +62,17 @@
 		/** Open edit forms by item id → their apply function. Save applies them all first. */
 		const openForms = new Map();
 
+		/**
+		 * Apply (and thereby close) every open edit form. Adding, cloning and saving all go
+		 * through here so only one form is ever open — a form whose apply fails (bad url, empty
+		 * conversion target) stays open with its inline error and the caller backs off.
+		 *
+		 * @returns {boolean} false when a form refused to close
+		 */
+		function applyOpenForms() {
+			return Array.from(openForms.values()).every((apply) => false !== apply());
+		}
+
 		/** Navigation-wide settings living on the structure root, not on an item. */
 		const HARD_DEPTH = parseInt(init.maxDepthLimit, 10) > 0 ? parseInt(init.maxDepthLimit, 10) : 10;
 		const settings = reactive({ maxDepth: parseInt((init.structure || {}).maxDepth, 10) > 0 ? parseInt((init.structure || {}).maxDepth, 10) : '' });
@@ -158,15 +169,12 @@
 		// On submit (the actual save) and on every mutation, so the input never lags behind the tree.
 		if (form) {
 			form.addEventListener('submit', (event) => {
-				// Apply every open edit form first — Save must not post half-edited state, and a
-				// form whose apply would fail (bad url, empty conversion target) blocks the submit
-				// so its inline error is seen instead of a full-page rejection.
-				for (const apply of Array.from(openForms.values())) {
-					if (false === apply()) {
-						event.preventDefault();
+				// Save must not post half-edited state; a form that refuses to apply blocks the
+				// submit so its inline error is seen instead of a full-page rejection.
+				if (!applyOpenForms()) {
+					event.preventDefault();
 
-						return;
-					}
+					return;
 				}
 
 				serialize();
@@ -312,7 +320,6 @@
 				const urlError = ref('');
 				const articleError = ref('');
 				const mediaError = ref('');
-				const adding = ref(false);
 
 				// Which form the user is editing in. Equals `item.type` outside an open form —
 				// a conversion is only committed on apply. Meaningless for `group` items.
@@ -487,10 +494,10 @@
 				// A row deleted (or unmounted for any reason) must not leave a stale apply behind.
 				onBeforeUnmount(() => openForms.delete(item.id));
 
-				// A freshly added item mounts with its form already open (makeItem sets `_edit`),
-				// so it registers here instead of via toggleEdit.
+				// A freshly added or cloned item mounts with its form already open (`_edit` preset),
+				// so it starts its edit here instead of via toggleEdit.
 				if (item._edit) {
-					openForms.set(item.id, () => close(false));
+					startEdit();
 				}
 
 				function remove() {
@@ -499,23 +506,42 @@
 					}
 				}
 
-				function duplicate() {
-					props.list.splice(props.index + 1, 0, cloneItem(item));
+				/**
+				 * Insert `make()`'s item right after this one, with its form open. Every other
+				 * form — this item's own included — is applied first, so the new form is the only
+				 * one open; a form that refuses to apply cancels the insert. Applying may have
+				 * removed this item (an unfilled picker self-deletes), so re-locate it.
+				 */
+				function insertAfter(make) {
+					if (!applyOpenForms()) {
+						return;
+					}
+
+					const at = props.list.indexOf(item);
+
+					if (at >= 0) {
+						props.list.splice(at + 1, 0, make());
+					}
 				}
 
-				/** Same flow as the toolbar's add buttons, just inserted after this item instead of appended. */
-				function addBelow(type) {
-					adding.value = false;
-					props.list.splice(props.index + 1, 0, makeItem(type));
+				function duplicate() {
+					insertAfter(() => Object.assign(cloneItem(item), { _edit: true }));
+				}
+
+				/** Straight into the article form — the type switch there covers the other types. */
+				function addBelow() {
+					insertAfter(() => makeItem('article'));
 				}
 
 				function toggleEdit() {
 					if (item._edit) {
 						close(false);
-
-						return;
+					} else {
+						startEdit();
 					}
+				}
 
+				function startEdit() {
 					// A cancelled edit reverted `url` behind the form's back — re-read it. The
 					// checkbox is hidden for email/phone, so drop a `_blank` it could not show.
 					mode.value = item.type;
@@ -875,7 +901,7 @@
 				return {
 					t: t, dnd: dnd, query: query, results: results, urlError: urlError, articleError: articleError, mode: mode,
 					mediaError: mediaError, textClass: init.textClass || '', textDiscarded: textDiscarded,
-					adding: adding, kind: kind, kindIcon: kindIcon, address: address,
+					kind: kind, kindIcon: kindIcon, address: address,
 					open: open, active: active, listId: listId,
 					clangs: clangs, visibleIn: visibleIn, toggleClang: toggleClang, allHidden: allHidden, hiddenHint: hiddenHint,
 					tooDeep: tooDeep,
@@ -909,7 +935,7 @@
 				<button type="button" class="btn btn-xs btn-default" :aria-label="t.move_in" :title="t.move_in" :disabled="index === 0 || tooDeep" @click="indent"><i class="rex-icon fa-arrow-right" aria-hidden="true"></i></button>
 				<button type="button" class="btn btn-xs btn-default" :aria-label="t.move_out" :title="t.move_out" :disabled="!parentList" @click="outdent"><i class="rex-icon fa-arrow-left" aria-hidden="true"></i></button>
 				<span class="nb-sep" aria-hidden="true"></span>
-				<button type="button" class="btn btn-xs btn-default" :aria-label="t.add_below" :title="t.add_below" :aria-expanded="adding ? 'true' : 'false'" @click="adding = !adding"><i class="rex-icon fa-plus" aria-hidden="true"></i></button>
+				<button type="button" class="btn btn-xs btn-default" :aria-label="t.add_below" :title="t.add_below" @click="addBelow"><i class="rex-icon fa-plus" aria-hidden="true"></i></button>
 				<button type="button" class="btn btn-xs btn-default" :aria-label="t.edit" :title="t.edit" :aria-expanded="item._edit ? 'true' : 'false'" @click="toggleEdit"><i class="rex-icon fa-pencil" aria-hidden="true"></i></button>
 				<button type="button" class="btn btn-xs btn-default" :aria-label="t.duplicate" :title="t.duplicate" @click="duplicate"><i class="rex-icon fa-copy" aria-hidden="true"></i></button>
 				<button type="button" class="btn btn-xs btn-default nb-remove" :aria-label="t.remove" :title="t.remove" @click="remove"><i class="rex-icon rex-icon-delete" aria-hidden="true"></i></button>
@@ -1111,15 +1137,6 @@
 				:item="child" :list="item.children" :index="i" :parent-list="list" :parent-index="index" :depth="depth + 1"></nav-item>
 		</ul>
 
-		<!-- Below the children on purpose: that is exactly where the new sibling lands. -->
-		<div v-if="adding" class="nb-addbar">
-			<span class="nb-addbar-label">{{ t.add_below }}</span>
-			<button type="button" class="btn btn-xs btn-default" @click="addBelow('article')"><i class="rex-icon rex-icon-article" aria-hidden="true"></i> {{ t.add_article }}</button>
-			<button type="button" class="btn btn-xs btn-default" @click="addBelow('link')"><i class="rex-icon fa-link" aria-hidden="true"></i> {{ t.add_link }}</button>
-			<button type="button" class="btn btn-xs btn-default" @click="addBelow('media')"><i class="rex-icon rex-icon-media" aria-hidden="true"></i> {{ t.add_media }}</button>
-			<button v-if="features.url" type="button" class="btn btn-xs btn-default" @click="addBelow('url')"><i class="rex-icon fa-database" aria-hidden="true"></i> {{ t.add_url }}</button>
-			<button type="button" class="btn btn-xs btn-default" @click="addBelow('text')"><i class="rex-icon fa-font" aria-hidden="true"></i> {{ t.add_text }}</button>
-		</div>
 	</li>`,
 		};
 
@@ -1136,8 +1153,11 @@
 			resetOver();
 		}
 
+		/** Only one form open at a time — see applyOpenForms(). */
 		function add(type) {
-			items.push(makeItem(type));
+			if (applyOpenForms()) {
+				items.push(makeItem(type));
+			}
 		}
 
 		function onRootDragOver(event) {

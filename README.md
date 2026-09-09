@@ -160,7 +160,10 @@ flachgeklopft — auch nicht an der globalen 10-Ebenen-Grenze.
 *Menüs → NavBuilder*: Navigation anlegen, Artikel/Links/Medien/Datensätze/Texte in den Baum ziehen (oder die
 Buttons hoch/runter/rein/raus benutzen — vollständiger Tastaturweg, alles mit `aria-label`). Der
 **+**-Button einer Zeile fügt einen neuen Eintrag direkt unter diesem Eintrag ein (unterhalb
-seiner Unterpunkte), statt ihn ans Ende zu hängen. Gelöschte oder offline geschaltete Artikel
+seiner Unterpunkte), statt ihn ans Ende zu hängen — gleich als Artikel im Bearbeiten-Formular,
+der Typ lässt sich dort umschalten. Es ist immer nur ein Formular offen: Hinzufügen oder
+**Duplizieren** eines Eintrags übernimmt zuerst das gerade offene Formular, das Duplikat öffnet
+sich direkt zum Bearbeiten. Gelöschte oder offline geschaltete Artikel
 werden im Baum markiert, statt die Navigation still zu zerstören; in der Frontend-Ausgabe
 erscheinen sie nicht. Mit **Duplizieren** in der Liste lässt sich eine Navigation abzweigen
 (z. B. Hauptnavigation → Footer-Navigation), ohne sie neu zu bauen.

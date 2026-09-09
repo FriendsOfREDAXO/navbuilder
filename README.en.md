@@ -151,7 +151,9 @@ and the actual depth), never silently flattened — the global 10-level cap incl
 *Menus → NavBuilder*: create a navigation, drag articles/links/media/datasets/text into the tree (or use the
 up/down/indent/outdent buttons — full keyboard path, `aria-label`ed). The **+** button on a row
 inserts a new sibling directly below that item (and below its children) instead of appending it
-at the end. Deleted or offline articles are flagged in the tree instead of silently breaking the
+at the end — straight into the edit form as an article, the type switch there covers the rest.
+Only one form is ever open: adding or **duplicating** an entry applies the currently open form
+first, and the duplicate opens for editing right away. Deleted or offline articles are flagged in the tree instead of silently breaking the
 navigation; they're excluded from frontend output. Use **Duplicate** in the list to branch a
 navigation (e.g. main nav → footer nav) without rebuilding it.
 

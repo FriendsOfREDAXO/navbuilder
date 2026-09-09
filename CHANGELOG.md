@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.1
+
+- The per-row **+** button inserts an article straight into the edit form instead of showing a
+  type picker first (the form's type switch covers the other types). Adding or duplicating an
+  entry applies the currently open form first, so only one form is open at a time, and a
+  duplicated entry opens for editing right away.
+- Fix: duplicating a navigation redirected to YForm's table_field page when the
+  yform_usability addon is installed — its `PAGE_CHECKED` hook hijacks every backend request
+  with `func=duplicate`. The list action is `func=copy` now.
+
 ## 2.0.0
 
 ### Per-navigation permissions (#16)

@@ -219,25 +219,6 @@
 	border-color: #337ab7;
 }
 
-/* ── Insert-below bar ───────────────────────────────────────────────────────────────────── */
-
-/* Ghost row below the item (and its children) it inserts after — same level, index + 1. */
-.nb-addbar {
-	align-items: center;
-	border: 1px dashed rgba(128, 128, 128, .45);
-	border-radius: 4px;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	margin: 5px 0;
-	padding: 8px 12px;
-}
-
-.nb-addbar-label {
-	color: #888;
-	font-size: 12px;
-}
-
 /* ── Edit form ──────────────────────────────────────────────────────────────────────────── */
 
 .nb-form {

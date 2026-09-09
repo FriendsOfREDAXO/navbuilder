@@ -109,7 +109,9 @@ $mayManage = NavigationPerm::mayManage();
 
 $allowed = match ($func) {
 	'' => true,
-	'add', 'delete', 'duplicate' => $mayManage,
+	// `copy`, not `duplicate`: yform_usability's PAGE_CHECKED hook redirects *every* backend
+	// request carrying `func=duplicate` to its own table_field page, whatever the page.
+	'add', 'delete', 'copy' => $mayManage,
 	// edit/save: creating (id = 0) needs manage, touching an existing row needs its edit perm
 	default => $id > 0 ? NavigationPerm::mayEdit($id) : $mayManage,
 };
@@ -121,11 +123,11 @@ if (!$allowed) {
 
 // Set on a failed save so the editor below can re-render the posted tree instead of reloading
 // the (unchanged) DB copy and discarding the user's edits. `$config` is only non-null when a
-// save was posted — delete/duplicate never carry form data.
+// save was posted — delete/copy never carry form data.
 $saveErrorItems = null;
 $config = null;
 
-if (in_array($func, ['save', 'delete', 'duplicate'], true)) {
+if (in_array($func, ['save', 'delete', 'copy'], true)) {
 	if (!$csrf->isValid()) {
 		echo rex_view::error(rex_i18n::msg('csrf_token_invalid'));
 		$func = '';
@@ -210,7 +212,7 @@ if (!in_array($func, ['add', 'edit'], true)) {
 	if ($mayManage) {
 		$list->addColumn('duplicate', '<i class="rex-icon fa-copy"></i> ' . rex_i18n::msg('navbuilder_duplicate'));
 		$list->setColumnLabel('duplicate', '');
-		$list->setColumnParams('duplicate', ['func' => 'duplicate', 'id' => '###id###'] + $csrf->getUrlParams());
+		$list->setColumnParams('duplicate', ['func' => 'copy', 'id' => '###id###'] + $csrf->getUrlParams());
 
 		$list->addColumn('delete', '<i class="rex-icon rex-icon-delete"></i> ' . rex_i18n::msg('navbuilder_delete'));
 		$list->setColumnLabel('delete', '');
