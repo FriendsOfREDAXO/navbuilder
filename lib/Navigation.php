@@ -484,7 +484,8 @@ final class Navigation
 				$item['_exists'] = null !== $article;
 				$item['_label'] = null !== $article ? $article->getName() : '';
 				$item['_online'] = null !== $article && $article->isOnline();
-				$item['_url'] = null !== $article ? rex_getUrl((int) $item['articleId'], $articleClang) : '';
+				// Raw `&`: the editor binds it as an href, an escaped `&amp;` would end up literally in the URL.
+				$item['_url'] = null !== $article ? rex_getUrl((int) $item['articleId'], $articleClang, [], '&') : '';
 			} elseif ('media' === ($item['type'] ?? '')) {
 				// Same deal as a deleted article: flagged in the backend, skipped in the frontend.
 				$media = rex_media::get((string) ($item['file'] ?? ''));
