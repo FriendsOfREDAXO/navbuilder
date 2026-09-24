@@ -9,6 +9,9 @@
   already were; the fragments escape exactly once. Same for the `_url` the editor prints
   in an item's hint, which showed a literal `&amp;`. Code that prints `tree()` URLs
   itself must escape them (as for every other URL type) — the READMEs say so now.
+  Only code that printed them **unescaped** sees a different string (`&` instead of
+  `&amp;`): inside an `href` that keeps working, it becomes visible when such a URL is
+  printed as text.
 
 ## 2.0.1
 
