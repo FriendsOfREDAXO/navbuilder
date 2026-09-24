@@ -20,7 +20,7 @@ use rex_url;
  *     id          string   stable item id
  *     type        string   article|link|media|text|url
  *     label       string   article name, media file name, deliberate override, link/text label
- *     url         ?string  null for text items
+ *     url         ?string  raw/unescaped, null for text items - escape it on output
  *     text        ?string  raw HTML, only for text items
  *     file        ?string  mediapool file name, only for media items
  *     articleId   ?int     only for article items
@@ -269,17 +269,22 @@ final class Renderer
 		return '' !== $request && rtrim($request, '/') === rtrim($path, '/');
 	}
 
+	/**
+	 * Raw URL (`&` as separator): the fragments escape it once on output. rex_getUrl()'s
+	 * default separator is `&amp;`, which the fragment's rex_escape() turned into `&amp;amp;`
+	 * — the second query parameter (e.g. `clang` without yrewrite) got lost.
+	 */
 	private static function url(int $articleId, int $clang, bool $absolute): string
 	{
 		if (!$absolute) {
-			return rex_getUrl($articleId, $clang);
+			return rex_getUrl($articleId, $clang, [], '&');
 		}
 
 		if (class_exists(\rex_yrewrite::class)) {
-			return \rex_yrewrite::getFullUrlByArticleId($articleId, $clang);
+			return \rex_yrewrite::getFullUrlByArticleId($articleId, $clang, [], '&');
 		}
 
-		return rtrim(rex::getServer(), '/') . rex_getUrl($articleId, $clang);
+		return rtrim(rex::getServer(), '/') . rex_getUrl($articleId, $clang, [], '&');
 	}
 
 	/** Media has no yrewrite equivalent — the configured server is the only absolute base there is. */

@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Fix: article URLs were built with `rex_getUrl()`'s default separator `&amp;` and escaped
+  once more by the fragments, rendering `href="index.php?article_id=1&amp;amp;clang=2"` —
+  the second parameter was lost (visible without yrewrite on multilingual sites, e.g.
+  `clang`). `tree()` now returns raw URLs (`&`), like media, link and yrewrite URLs
+  already were; the fragments escape exactly once. Same for the `_url` the editor prints
+  in an item's hint, which showed a literal `&amp;`. Code that prints `tree()` URLs
+  itself must escape them (as for every other URL type) — the READMEs say so now.
+  Only code that printed them **unescaped** sees a different string (`&` instead of
+  `&amp;`): inside an `href` that keeps working, it becomes visible when such a URL is
+  printed as text.
+
 ## 2.0.1
 
 - The per-row **+** button inserts an article straight into the edit form instead of showing a
