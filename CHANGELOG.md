@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0
 
 - Fix: article URLs were built with `rex_getUrl()`'s default separator `&amp;` and escaped
   once more by the fragments, rendering `href="index.php?article_id=1&amp;amp;clang=2"` —
