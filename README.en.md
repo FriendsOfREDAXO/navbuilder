@@ -243,7 +243,7 @@ Every node returned by `tree()` (and passed to fragments):
 | `id` | string | stable internal id, for `:key`/diffing and per-item styling |
 | `type` | string | `article` \| `link` \| `media` \| `url` \| `text` |
 | `label` | string | article name, file name, dataset title, override, or link/text label |
-| `url` | `?string` | `null` for `text` items |
+| `url` | `?string` | **raw/unescaped** (`&` as separator) – escape it once on output; `null` for `text` items |
 | `text` | `?string` | raw HTML, only for `text` items |
 | `file` | `?string` | mediapool file name, only for `media` items (e.g. to branch on the extension) |
 | `articleId` | `?int` | only for `article` items |

@@ -20,7 +20,7 @@ use rex_url;
  *     id          string   stable item id
  *     type        string   article|link|media|text|url
  *     label       string   article name, media file name, deliberate override, link/text label
- *     url         ?string  null for text items
+ *     url         ?string  raw/unescaped, null for text items - escape it on output
  *     text        ?string  raw HTML, only for text items
  *     file        ?string  mediapool file name, only for media items
  *     articleId   ?int     only for article items
@@ -281,7 +281,7 @@ final class Renderer
 		}
 
 		if (class_exists(\rex_yrewrite::class)) {
-			return \rex_yrewrite::getFullUrlByArticleId($articleId, $clang);
+			return \rex_yrewrite::getFullUrlByArticleId($articleId, $clang, [], '&');
 		}
 
 		return rtrim(rex::getServer(), '/') . rex_getUrl($articleId, $clang, [], '&');

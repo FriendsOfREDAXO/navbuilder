@@ -6,9 +6,9 @@
   once more by the fragments, rendering `href="index.php?article_id=1&amp;amp;clang=2"` —
   the second parameter was lost (visible without yrewrite on multilingual sites, e.g.
   `clang`). `tree()` now returns raw URLs (`&`), like media, link and yrewrite URLs
-  already were; the fragments escape exactly once. Same for the editor's article preview
-  link. Code that prints `tree()` URLs itself must escape them (as for every other URL
-  type).
+  already were; the fragments escape exactly once. Same for the `_url` the editor prints
+  in an item's hint, which showed a literal `&amp;`. Code that prints `tree()` URLs
+  itself must escape them (as for every other URL type) — the READMEs say so now.
 
 ## 2.0.1
 

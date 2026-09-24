@@ -256,7 +256,7 @@ Jeder Knoten aus `tree()` (und an die Fragmente übergeben):
 | `id` | string | stabile interne ID, für `:key`/Diffing und Styling pro Eintrag |
 | `type` | string | `article` \| `link` \| `media` \| `url` \| `text` |
 | `label` | string | Artikelname, Dateiname, Datensatz-Titel, Überschreibung oder Link-/Textbeschriftung |
-| `url` | `?string` | `null` bei `text`-Einträgen |
+| `url` | `?string` | **roh/unescaped** (`&` als Trenner) – beim Ausgeben einmal escapen; `null` bei `text`-Einträgen |
 | `text` | `?string` | rohes HTML, nur bei `text`-Einträgen |
 | `file` | `?string` | Dateiname aus dem Medienpool, nur bei `media`-Einträgen (z. B. für eine Verzweigung nach Endung) |
 | `articleId` | `?int` | nur bei `article`-Einträgen |

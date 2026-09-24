@@ -484,7 +484,9 @@ final class Navigation
 				$item['_exists'] = null !== $article;
 				$item['_label'] = null !== $article ? $article->getName() : '';
 				$item['_online'] = null !== $article && $article->isOnline();
-				// Raw `&`: the editor binds it as an href, an escaped `&amp;` would end up literally in the URL.
+				// Raw `&`: the editor prints this as text in the item hint
+				// (`<code class="nb-hint">` in assets/navbuilder.js), where an escaped
+				// `&amp;` showed up literally.
 				$item['_url'] = null !== $article ? rex_getUrl((int) $item['articleId'], $articleClang, [], '&') : '';
 			} elseif ('media' === ($item['type'] ?? '')) {
 				// Same deal as a deleted article: flagged in the backend, skipped in the frontend.
