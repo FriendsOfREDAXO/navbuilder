@@ -284,7 +284,7 @@ final class Renderer
 			return \rex_yrewrite::getFullUrlByArticleId($articleId, $clang, [], '&');
 		}
 
-		return rtrim(rex::getServer(), '/') . rex_getUrl($articleId, $clang, [], '&');
+		return self::absolute(rex_getUrl($articleId, $clang, [], '&'));
 	}
 
 	/** Media has no yrewrite equivalent — the configured server is the only absolute base there is. */
@@ -292,6 +292,16 @@ final class Renderer
 	{
 		$url = rex_url::media($file);
 
-		return $absolute ? rtrim(rex::getServer(), '/') . '/' . ltrim($url, '/') : $url;
+		return $absolute ? self::absolute($url) : $url;
+	}
+
+	/**
+	 * Prefixes the configured server. In the frontend, rex_getUrl() without a rewriter yields
+	 * `./index.php?…` (HTDOCS_PATH is `./`); glued straight onto the server that became
+	 * `https://example.com./index.php` — hence the trim of `./` on both sides of the join.
+	 */
+	private static function absolute(string $path): string
+	{
+		return rtrim(rex::getServer(), '/') . '/' . ltrim($path, './');
 	}
 }

@@ -12,6 +12,9 @@
   Only code that printed them **unescaped** sees a different string (`&` instead of
   `&amp;`): inside an `href` that keeps working, it becomes visible when such a URL is
   printed as text.
+- Fix: absolute article URLs (`tree()` with `absolute`) on sites without yrewrite were built as
+  `https://example.com./index.php?…` — the frontend's `./index.php` was glued straight onto the
+  server. Article and media URLs now share the same join.
 
 ## 2.0.1
 
