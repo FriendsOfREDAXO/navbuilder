@@ -50,7 +50,10 @@ and logged via `rex_logger` rather than migrated as garbage. If the migration ha
 the update message names the count (details in the system log). Before updating, existing names
 are preflighted: names longer than 191 characters abort the update with a clear message (shorten
 them first), non-slug names are reported in the system log — they keep working via
-`rex_navbuilder::render()` but cannot be addressed with `REX_NAVBUILDER[name=…]`. Nothing here touches the frontend
+`rex_navbuilder::render()` but cannot be addressed with `REX_NAVBUILDER[name=…]`. Names that only
+fail because of uppercase letters (e.g. `FOOTER_NAV`) stay addressable via `REX_NAVBUILDER[name=…]` (the
+filter and the lookup ignore case) and only log a notice: saving in the backend requires a
+lowercase name, existing snippets keep matching after the rename. Nothing here touches the frontend
 API — `render()`/`tree()`/the deprecated shims all keep working during and after the migration.
 
 ## Data model (v2)

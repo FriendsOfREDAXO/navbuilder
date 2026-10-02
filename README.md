@@ -52,7 +52,11 @@ und über `rex_logger` protokolliert, statt als Müll migriert zu werden. Musste
 Einträge verwerfen, nennt die Update-Meldung deren Anzahl (Details im Systemlog). Vor dem Update
 werden die vorhandenen Namen geprüft: Namen über 191 Zeichen brechen das Update mit einer klaren
 Meldung ab (vorher kürzen), Nicht-Slug-Namen werden im Systemlog gemeldet — sie funktionieren
-weiter über `rex_navbuilder::render()`, sind aber per `REX_NAVBUILDER[name=…]` nicht adressierbar. Die Frontend-API bleibt
+weiter über `rex_navbuilder::render()`, sind aber per `REX_NAVBUILDER[name=…]` nicht adressierbar.
+Namen, die nur wegen Großbuchstaben kein Slug sind (z. B. `FOOTER_NAV`), bleiben auch per
+`REX_NAVBUILDER[name=…]` adressierbar (Filter und Abfrage ignorieren Groß-/Kleinschreibung) und
+erzeugen nur einen Hinweis: Speichern im Backend verlangt einen kleingeschriebenen Namen,
+bestehende Snippets greifen nach dem Umbenennen weiter. Die Frontend-API bleibt
 davon unberührt — `render()`/`tree()`/die veralteten Shims funktionieren während und nach der
 Migration unverändert.
 

@@ -13,7 +13,9 @@ require_once __DIR__ . '/lib/Navigation.php';
 // v1 accepted arbitrary varchar(255) names; v2 narrows the column to 191 chars and only saves
 // slugs. A too-long name would make the ALTER fail (or truncate) mid-update — abort cleanly
 // instead. Non-slug names keep working via render('name'), but their `REX_NAVBUILDER[…]`
-// snippet can no longer match; that is a warning, not a blocker.
+// snippet can no longer match; that is a warning, not a blocker. Uppercase alone is not such a
+// name: the output filter's regex is case-insensitive and so is the lookup (the default `_ci`
+// collation) — only Navigation::save() rejects it, so those get their own, milder notice.
 $names = array_map(
 	strval(...),
 	array_column(
@@ -28,12 +30,23 @@ if ([] !== $tooLong) {
 	throw new rex_functional_exception(rex_i18n::rawMsg('navbuilder_error_update_names_too_long', implode('", "', $tooLong)));
 }
 
-$nonSlug = array_filter($names, static fn (string $name): bool => 1 !== preg_match('/^[a-z0-9_-]+$/', $name));
+$nonSlug = array_filter($names, static fn (string $name): bool => 1 !== preg_match('/^[a-z0-9_-]+$/i', $name));
+$uppercase = array_filter(
+	array_diff($names, $nonSlug),
+	static fn (string $name): bool => 1 !== preg_match('/^[a-z0-9_-]+$/', $name),
+);
 
 if ([] !== $nonSlug) {
 	rex_logger::factory()->warning(
 		'navbuilder: navigation names are not slugs and cannot be addressed via REX_NAVBUILDER[name=…] (rename them in the backend): "{names}"',
 		['names' => implode('", "', $nonSlug)],
+	);
+}
+
+if ([] !== $uppercase) {
+	rex_logger::factory()->notice(
+		'navbuilder: navigation names contain uppercase letters; REX_NAVBUILDER[name=…] keeps working, but saving them in the backend requires a lowercase name: "{names}"',
+		['names' => implode('", "', $uppercase)],
 	);
 }
 
