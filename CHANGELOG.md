@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.1
+
+- Fix: the update's name check reported uppercase names (e.g. `FOOTER_NAV`) as "not slugs and
+  cannot be addressed via `REX_NAVBUILDER[name=…]`" — wrong, the output filter and the lookup
+  ignore case, so those snippets keep working. Such names now log a notice instead: they only
+  need a lowercase name before the next save in the backend (existing snippets keep matching
+  after the rename). The warning remains for names that really can't be addressed.
+
 ## 2.1.0
 
 - Fix: article URLs were built with `rex_getUrl()`'s default separator `&amp;` and escaped
