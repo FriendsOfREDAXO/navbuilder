@@ -27,6 +27,7 @@ navbuilder_error_name_invalid = Der Name "{0}" ist ungültig. Erlaubt sind Klein
 navbuilder_error_not_found = Diese Navigation existiert nicht (mehr).
 navbuilder_error_no_permission = Keine Berechtigung für diese Aktion.
 navbuilder_error_url_scheme = Die Adresse "{0}" verwendet ein nicht erlaubtes Protokoll. Erlaubt sind http, https, mailto, tel sowie relative Links.
+navbuilder_error_anchor_invalid = Der Anker "{0}" ist ungültig. Erlaubt sind Buchstaben, Ziffern, "-" und "_" (ohne Leerzeichen).
 navbuilder_error_max_depth = Die Navigation ist {1} Ebenen tief, erlaubt sind maximal {0}. Bitte Einträge eine Ebene höher schieben.
 navbuilder_error_structure_invalid = Die übermittelte Navigationsstruktur ist kein gültiges JSON und wurde nicht gespeichert.
 navbuilder_error_structure_too_large = Die Navigation ist zu groß ({0} Bytes, Maximum {1}). Bitte Einträge entfernen oder Texte kürzen.
@@ -63,6 +64,9 @@ navbuilder_js_kind_tel = Telefon
 navbuilder_js_kind_url = Link
 navbuilder_js_label = Beschriftung
 navbuilder_js_label_override = Abweichende Beschriftung (leer = Artikelname)
+navbuilder_js_anchor = Anker (optional)
+navbuilder_js_anchor_help = Springt zu einem Abschnitt der Seite, z. B. "anfahrt" für …/kontakt/#anfahrt.
+navbuilder_js_anchor_placeholder = Anker
 navbuilder_js_link = Link
 navbuilder_js_link_kind = Erkannte Art des Links
 navbuilder_js_link_placeholder = https://example.com, name@example.com, +41 44 123 45 67

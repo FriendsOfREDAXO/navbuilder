@@ -77,6 +77,16 @@ test('clean whitelists items and strips transients', () => {
 	assert.deepEqual(items[3], { id: 't1', type: 'text', label: 'Service', text: '<p>x</p>', children: [] });
 });
 
+test('clean normalizes article anchors and drops empty ones', () => {
+	const items = clean([
+		{ id: 'a1', type: 'article', articleId: 13, anchor: ' #anfahrt ', children: [] },
+		{ id: 'a2', type: 'article', articleId: 13, anchor: '#', children: [] },
+	]);
+
+	assert.equal(items[0].anchor, 'anfahrt');
+	assert.equal('anchor' in items[1], false);
+});
+
 test('clean drops half-filled and unknown items, keeps nested children', () => {
 	const items = clean([
 		{ id: 'x1', type: 'article', articleId: null, children: [] },

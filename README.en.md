@@ -64,7 +64,7 @@ API — `render()`/`tree()`/the deprecated shims all keep working during and aft
   "maxDepth": 3,                       // optional, absent = unlimited (hard cap: 10)
   "items": [
     { "id": "a1b2c3d4", "type": "article", "articleId": 12, "clang": null, "children": [],
-      "label": "optional editorial override", "hiddenIn": [2] },
+      "label": "optional editorial override", "anchor": "directions", "hiddenIn": [2] },
     { "id": "e5f6a7b8", "type": "link", "url": "https://example.com", "label": "External",
       "target": "_blank", "children": [] },
     { "id": "b1c2d3e4", "type": "media", "file": "brochure.pdf", "label": "Brochure",
@@ -80,6 +80,15 @@ API — `render()`/`tree()`/the deprecated shims all keep working during and aft
 `article` items carry the article id only; name and URL are resolved at render time. A `label`
 on an `article` item is a deliberate override, never a cache — omit it to always show the
 current article name.
+
+An optional **anchor** (`anchor`, "Anchor" in the editor) links to a section of the article:
+`directions` yields `…/contact/#directions`. The item stays bound to the article id, so the URL
+follows renames and deleted/offline articles are handled as usual. The anchor is stored without
+the leading `#`; allowed are `A–Z a–z 0–9 - _` (what `rex_string::normalize()` produces for section
+ids). A backend save rejects an invalid anchor, a migration just drops it (the item stays). Whether
+the section exists on the target page is not checked. An anchored item is never `active` and does
+not count toward `activePath` through its article (only through active children) — otherwise
+"Contact" and "Directions" would both be highlighted on /contact/.
 
 `media` items carry the mediapool file name only. URL and existence are resolved at render time
 via `rex_media::get()`; without a `label` the file name is shown. A deleted file disappears from
@@ -255,8 +264,8 @@ Every node returned by `tree()` (and passed to fragments):
 | `dataId` | `?int` | dataset id within that profile, only for `url` items |
 | `target` | `?string` | only for `link`, `media` and `url` items with an explicit target |
 | `online` | bool | always `true` — offline/deleted articles are filtered out already |
-| `active` | bool | points at exactly the current article (for `url` items: at the requested path) |
-| `activePath` | bool | active, an ancestor of it, or has an active descendant |
+| `active` | bool | points at exactly the current article (for `url` items: at the requested path; never for article items with an anchor) |
+| `activePath` | bool | active, an ancestor of it, or has an active descendant (article items with an anchor only via descendants) |
 | `depth` | int | 1-based |
 | `children` | list | same shape |
 

@@ -20,7 +20,7 @@
  *        "maxDepth": 3,                        // optional per-navigation nesting cap, null = none
  *        "items": [
  *          { "id": "a1b2c3d4", "type": "article", "articleId": 12, "clang": null, "children": [],
- *            "label": "optional editorial override", "hiddenIn": [2],
+ *            "label": "optional editorial override", "anchor": "anfahrt", "hiddenIn": [2],
  *            "_exists": true, "_label": "Kontakt", "_online": true, "_url": "/kontakt/" },
  *          { "id": "e5f6a7b8", "type": "link",  "url": "https://…", "label": "Extern",
  *            "target": "_self|_blank|_top", "children": [] },
@@ -293,7 +293,7 @@ $init = [
 
 // Keys handed to the app, without the `navbuilder_js_` prefix. Keep in sync with lang/*.lang.
 $jsKeys = [
-	'add_article', 'add_below', 'add_link', 'add_media', 'add_text', 'add_url', 'apply', 'article', 'cancel',
+	'add_article', 'add_below', 'anchor', 'anchor_help', 'anchor_placeholder', 'add_link', 'add_media', 'add_text', 'add_url', 'apply', 'article', 'cancel',
 	'choose_article', 'choose_media', 'choose_url', 'article_required', 'confirm_remove', 'deleted', 'duplicate',
 	'edit', 'empty', 'file', 'hidden_everywhere', 'hidden_in', 'item_id',
 	'item_type', 'kind_email',

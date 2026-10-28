@@ -27,6 +27,7 @@ navbuilder_error_name_invalid = The name "{0}" is invalid. Allowed are lowercase
 navbuilder_error_not_found = This navigation does not (or no longer) exist.
 navbuilder_error_no_permission = You are not permitted to perform this action.
 navbuilder_error_url_scheme = The address "{0}" uses a scheme that is not allowed. Permitted are http, https, mailto, tel and relative links.
+navbuilder_error_anchor_invalid = The anchor "{0}" is invalid. Allowed are letters, digits, "-" and "_" (no spaces).
 navbuilder_error_max_depth = The navigation is {1} levels deep, the maximum is {0}. Please move entries up a level.
 navbuilder_error_structure_invalid = The submitted navigation structure is not valid JSON and was not saved.
 navbuilder_error_structure_too_large = The navigation is too large ({0} bytes, maximum {1}). Please remove entries or shorten texts.
@@ -63,6 +64,9 @@ navbuilder_js_kind_tel = Phone
 navbuilder_js_kind_url = Link
 navbuilder_js_label = Label
 navbuilder_js_label_override = Custom label (empty = article name)
+navbuilder_js_anchor = Anchor (optional)
+navbuilder_js_anchor_help = Jumps to a section of the page, e.g. "directions" for …/contact/#directions.
+navbuilder_js_anchor_placeholder = Anchor
 navbuilder_js_link = Link
 navbuilder_js_link_kind = Detected link kind
 navbuilder_js_link_placeholder = https://example.com, name@example.com, +41 44 123 45 67

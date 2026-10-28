@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Article items take an optional **anchor** (`"anchor":"anfahrt"` → `…/kontakt/#anfahrt`): a
+  section link that stays bound to the article id, so it follows renames and keeps the
+  deleted/offline handling a hand-written link (`/kontakt/#anfahrt`) lacks. Saved without the
+  leading `#`, limited to `[A-Za-z0-9_-]`; a save rejects anything else, a migration drops just
+  the anchor. Anchored items are never `active` and count toward `activePath` only through their
+  children, so "Kontakt" and "Anfahrt" don't both light up on /kontakt/. Existing data is
+  untouched (no anchor = output as before).
+
 ## 2.1.1
 
 - Fix: the update's name check reported uppercase names (e.g. `FOOTER_NAV`) as "not slugs and

@@ -152,6 +152,13 @@
 				if ('' !== label) {
 					mapped.label = label;
 				}
+
+				// Same normalization as the server; the charset check stays server-side (strict save rejects).
+				const anchor = String(item.anchor || '').trim().replace(/^#/, '');
+
+				if ('' !== anchor) {
+					mapped.anchor = anchor;
+				}
 			} else if ('link' === item.type) {
 				const url = String(item.url || '').trim();
 

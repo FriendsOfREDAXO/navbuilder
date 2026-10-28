@@ -20,7 +20,7 @@
 	const { uid, isSafeUrl, detectKind, splitLink, buildLink, clean } = window.NavBuilderCore;
 
 	/** Item fields the editor may change — used for the edit-form snapshot (cancel = revert). */
-	const EDITABLE = ['type', 'articleId', 'clang', 'label', 'url', 'target', 'file', 'text', 'hiddenIn', 'profileId', 'dataId', '_label', '_online', '_url', '_exists', '_profile'];
+	const EDITABLE = ['type', 'articleId', 'clang', 'label', 'anchor', 'url', 'target', 'file', 'text', 'hiddenIn', 'profileId', 'dataId', '_label', '_online', '_url', '_exists', '_profile'];
 
 	const SEARCH_DELAY = 250;
 
@@ -416,7 +416,15 @@
 					return item.url || t[item.type] || item.type;
 				});
 
-				const hint = computed(() => ('article' === item.type || 'media' === item.type || 'url' === item.type ? item._url || '' : item.url || ''));
+				// The anchor is appended live, so the hint follows the field while typing.
+				const anchor = computed(() => String(item.anchor || '').trim().replace(/^#/, ''));
+				const hint = computed(() => {
+					if ('article' === item.type) {
+						return item._url ? item._url + (anchor.value ? '#' + anchor.value : '') : '';
+					}
+
+					return 'media' === item.type || 'url' === item.type ? item._url || '' : item.url || '';
+				});
 
 				// ── Per-language visibility ───────────────────────────────────────────────
 				const visibleIn = (id) => (item.hiddenIn || []).indexOf(id) < 0;
@@ -622,6 +630,7 @@
 						if ('article' !== mode.value) {
 							item.articleId = null;
 							item.clang = null;
+							item.anchor = null;
 							item._online = null;
 						}
 
@@ -999,6 +1008,11 @@
 					<div class="form-group">
 						<label class="control-label" :for="'nb-o-' + item.id">{{ t.label_override }}</label>
 						<input class="form-control" type="text" :id="'nb-o-' + item.id" v-model="item.label" :placeholder="item._label">
+					</div>
+					<div class="form-group">
+						<label class="control-label" :for="'nb-a-' + item.id">{{ t.anchor }}</label>
+						<input class="form-control" type="text" :id="'nb-a-' + item.id" v-model="item.anchor" :placeholder="t.anchor_placeholder" autocomplete="off" :aria-describedby="'nb-ah-' + item.id">
+						<span class="help-block" :id="'nb-ah-' + item.id">{{ t.anchor_help }}</span>
 					</div>
 				</div>
 			</template>

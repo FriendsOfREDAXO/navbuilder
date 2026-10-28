@@ -29,8 +29,10 @@ use rex_url;
  *     dataId      ?int     url-addon dataset id, only for url items
  *     target      ?string  only for link, media and url items with an explicit target
  *     online      bool     always true in the returned tree (offline items are filtered out)
- *     active      bool     this item points at exactly the current article
+ *     active      bool     this item points at exactly the current article (never for an
+ *                          article item with an anchor — it points at a section, not the page)
  *     activePath  bool     active, an ancestor of the current article, or has an active descendant
+ *                          (an anchored article item only via its descendants)
  *     depth       int      1-based
  *     children    list     same shape, recursively
  *
@@ -152,6 +154,7 @@ final class Renderer
 			}
 
 			$type = (string) ($item['type'] ?? '');
+			$sectionOnly = false;
 			$children = self::buildTree($item['children'] ?? [], $ctx, $depth + 1);
 
 			$node = [
@@ -187,8 +190,12 @@ final class Renderer
 				// Identity a project fragment can branch on without hardcoding article ids.
 				$node['categoryId'] = $article->getCategoryId();
 				$node['label'] = '' !== $node['label'] ? $node['label'] : $article->getName();
-				$node['url'] = self::url($articleId, $clang, $ctx['absolute']);
-				$node['active'] = $articleId === $ctx['currentId'];
+				$anchor = (string) ($item['anchor'] ?? '');
+				$node['url'] = self::url($articleId, $clang, $ctx['absolute']) . ('' !== $anchor ? '#' . $anchor : '');
+				// "Kontakt" and "Kontakt#anfahrt" must not both light up on /kontakt/: an anchored
+				// item points at a section, so neither active nor activePath via its article.
+				$sectionOnly = '' !== $anchor;
+				$node['active'] = !$sectionOnly && $articleId === $ctx['currentId'];
 			} elseif ('link' === $type) {
 				$node['url'] = (string) ($item['url'] ?? '');
 				$node['target'] = '_self' === ($item['target'] ?? '_self') ? null : (string) $item['target'];
@@ -234,7 +241,7 @@ final class Renderer
 			}
 
 			$node['activePath'] = $node['active']
-				|| (null !== $node['articleId'] && isset($ctx['ancestors'][$node['articleId']]))
+				|| (null !== $node['articleId'] && !$sectionOnly && isset($ctx['ancestors'][$node['articleId']]))
 				|| self::hasActive($children);
 
 			$tree[] = $node;

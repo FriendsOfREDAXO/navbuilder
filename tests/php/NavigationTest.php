@@ -87,6 +87,22 @@ final class NavigationTest extends TestCase
 		Navigation::decode($link('data:text/html,x'), true);
 	}
 
+	// ── anchors ─────────────────────────────────────────────────────────────────────────────
+
+	public function testArticleAnchorIsNormalizedDroppedOrRejected(): void
+	{
+		$article = static fn (string $anchor): string => json_encode([['type' => 'article', 'articleId' => 13, 'anchor' => $anchor, 'children' => []]]);
+
+		self::assertSame('anfahrt', Navigation::decode($article(' #anfahrt '))[0]['anchor']);
+		self::assertArrayNotHasKey('anchor', Navigation::decode($article(''))[0], 'empty stores nothing, like label');
+		self::assertArrayNotHasKey('anchor', Navigation::decode($article('foo bar'))[0], 'a bad anchor costs the anchor, not the item');
+		self::assertArrayNotHasKey('anchor', Navigation::decode($article('<x>'))[0]);
+		self::assertStringContainsString('invalid anchor', implode(' ', rex_logger::$messages));
+
+		$this->expectException(rex_functional_exception::class);
+		Navigation::decode($article('foo bar'), true);
+	}
+
 	// ── targets ─────────────────────────────────────────────────────────────────────────────
 
 	public function testTargetIsValidatedForLinkAndMedia(): void

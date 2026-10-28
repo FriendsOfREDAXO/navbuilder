@@ -68,7 +68,7 @@ Migration unverändert.
   "maxDepth": 3,                       // optional, fehlt = unbegrenzt (harte Grenze: 10)
   "items": [
     { "id": "a1b2c3d4", "type": "article", "articleId": 12, "clang": null, "children": [],
-      "label": "optionale redaktionelle Überschreibung", "hiddenIn": [2] },
+      "label": "optionale redaktionelle Überschreibung", "anchor": "anfahrt", "hiddenIn": [2] },
     { "id": "e5f6a7b8", "type": "link", "url": "https://example.com", "label": "Extern",
       "target": "_blank", "children": [] },
     { "id": "b1c2d3e4", "type": "media", "file": "prospekt.pdf", "label": "Prospekt",
@@ -84,6 +84,16 @@ Migration unverändert.
 `article`-Einträge speichern nur die Artikel-ID; Name und URL werden beim Rendern aufgelöst. Ein
 `label` an einem `article`-Eintrag ist eine bewusste Überschreibung, nie ein Cache — ohne `label`
 erscheint immer der aktuelle Artikelname.
+
+Ein optionaler **Anker** (`anchor`, im Editor „Anker“) verlinkt auf einen Abschnitt des Artikels:
+`anfahrt` ergibt `…/kontakt/#anfahrt`. Der Eintrag bleibt an die Artikel-ID gebunden, die URL folgt
+also Umbenennungen, und gelöschte/offline Artikel werden wie gewohnt behandelt. Gespeichert wird
+der Anker ohne führendes `#`; erlaubt sind `A–Z a–z 0–9 - _` (das liefert
+`rex_string::normalize()` für Abschnitts-IDs). Beim Speichern im Backend wird ein ungültiger Anker
+abgelehnt, bei der Migration nur verworfen (der Eintrag bleibt). Ob es den Abschnitt auf der
+Zielseite gibt, wird nicht geprüft. Ein Eintrag mit Anker ist nie `active` und zählt auch nicht über
+seinen Artikel zu `activePath` (nur über aktive Unterpunkte) — sonst würden „Kontakt“ und
+„Anfahrt“ auf /kontakt/ beide hervorgehoben.
 
 `media`-Einträge speichern nur den Dateinamen aus dem Medienpool. URL und Existenz werden beim
 Rendern über `rex_media::get()` aufgelöst; ohne `label` erscheint der Dateiname. Eine gelöschte
@@ -269,8 +279,8 @@ Jeder Knoten aus `tree()` (und an die Fragmente übergeben):
 | `dataId` | `?int` | Datensatz-ID im Profil, nur bei `url`-Einträgen |
 | `target` | `?string` | nur bei `link`-, `media`- und `url`-Einträgen mit explizitem Ziel |
 | `online` | bool | immer `true` — offline/gelöschte Artikel sind bereits herausgefiltert |
-| `active` | bool | zeigt genau auf den aktuellen Artikel (bei `url`-Einträgen: auf den aufgerufenen Pfad) |
-| `activePath` | bool | aktiv, Vorfahre davon oder mit aktivem Nachfahren |
+| `active` | bool | zeigt genau auf den aktuellen Artikel (bei `url`-Einträgen: auf den aufgerufenen Pfad; nie bei Artikel-Einträgen mit Anker) |
+| `activePath` | bool | aktiv, Vorfahre davon oder mit aktivem Nachfahren (Artikel-Einträge mit Anker nur über Nachfahren) |
 | `depth` | int | 1-basiert |
 | `children` | list | gleiche Struktur |
 
