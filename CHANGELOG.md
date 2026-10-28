@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.2.0
 
 - Article items take an optional **anchor** (`"anchor":"anfahrt"` → `…/kontakt/#anfahrt`): a
   section link that stays bound to the article id, so it follows renames and keeps the
